@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#DC0000">
+  <title>F1 im TV</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏎️</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --fr: #DC0000;
+      --fd: #8B0000;
+      --fb: #0a0a0a;
+      --fc: #1C1C1C;
+      --fg: #C9A227;
+      --fw: #ffffff;
+      --fgray: #777;
+    }
+
+    html, body {
+      background: var(--fb);
+      color: var(--fw);
+      font-family: 'Barlow', sans-serif;
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 430px;
+      margin: 0 auto;
+      padding-bottom: 40px;
+    }
+
+    .hdr {
+      background: var(--fr);
+      padding: 20px 20px 16px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hdr::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0,0,0,0.06) 40px, rgba(0,0,0,0.06) 41px);
+    }
+    .hdr-inner { position: relative; z-index: 1; }
+    .hdr-horse { margin-bottom: 6px; }
+    .hdr-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+    }
+    .hdr-sub {
+      font-size: 12px;
+      letter-spacing: 3px;
+      opacity: 0.8;
+      margin-top: 3px;
+    }
+
+    .stripe {
+      height: 5px;
+      background: linear-gradient(90deg, var(--fg) 0%, var(--fg) 33%, #fff 33%, #fff 66%, var(--fg) 66%);
+    }
+
+    .sec { padding: 20px 16px 6px; }
+    .sec-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: var(--fg);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .live-card {
+      background: var(--fr);
+      border-radius: 16px;
+      padding: 22px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .live-card::after {
+      content: '';
+      position: absolute;
+      right: -14px; top: -14px;
+      width: 110px; height: 110px;
+      background: rgba(0,0,0,0.12);
+      border-radius: 50%;
+    }
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .live-dot {
+      width: 11px; height: 11px;
+      background: #fff;
+      border-radius: 50%;
+      animation: blink 1.4s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.25; }
+    }
+    .live-badge-txt {
+      font-family: 'Oswald', sans-serif;
+      font-size: 13px;
+      letter-spacing: 3px;
+      opacity: 0.9;
+    }
+    .live-session {
+      font-family: 'Oswald', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 5px;
+      position: relative;
+      z-index: 1;
+    }
+    .live-race {
+      font-size: 16px;
+      opacity: 0.9;
+      margin-bottom: 16px;
+    }
+    .live-flag {
+      font-size: 30px;
+      position: absolute;
+      right: 20px; top: 20px;
+      opacity: 0.45;
+      z-index: 0;
+    }
+    .live-chan {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: rgba(0,0,0,0.28);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-family: 'Oswald', sans-serif;
+      font-size: 19px;
+      letter-spacing: 1px;
+      position: relative;
+      z-index: 1;
+    }
+    .live-chan-dot {
+      width: 9px; height: 9px;
+      background: #4ADE80;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .rtl-tag {
+      background: var(--fg);
+      color: #000;
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+    }
+
+    .nothing {
+      background: var(--fc);
+      border-radius: 16px;
+      padding: 32px 20px;
+      text-align: center;
+    }
+    .nothing-ico { font-size: 48px; margin-bottom: 12px; }
+    .nothing-txt {
+      font-family: 'Oswald', sans-serif;
+      font-size: 20px;
+      color: var(--fgray);
+    }
+
+    .next-card {
+      background: var(--fc);
+      border-radius: 16px;
+      padding: 20px 22px;
+      border-left: 3px solid var(--fg);
+    }
+    .next-session {
+      font-family: 'Oswald', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .next-race {
+      font-size: 14px;
+      color: #aaa;
+      margin-bottom: 12px;
+    }
+    .next-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 6px;
+    }
+    .next-ico { font-size: 16px; color: var(--fg); }
+    .next-val {
+      font-family: 'Oswald', sans-serif;
+      font-size: 17px;
+      color: var(--fg);
+    }
+    .next-chan { font-size: 15px; color: #ccc; margin-top: 2px; }
+    .countdown {
+      font-size: 13px;
+      color: var(--fgray);
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #333;
+    }
+    .countdown span { color: #ddd; font-weight: 600; }
+
+    .sched-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 0;
+      border-bottom: 1px solid #1e1e1e;
+    }
+    .sched-item:last-child { border-bottom: none; }
+    .sched-flag { font-size: 26px; flex-shrink: 0; width: 34px; text-align: center; }
+    .sched-info { flex: 1; min-width: 0; }
+    .sched-session {
+      font-family: 'Oswald', sans-serif;
+      font-size: 17px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sched-race {
+      font-size: 12px;
+      color: var(--fgray);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sched-right { text-align: right; flex-shrink: 0; }
+    .sched-date {
+      font-family: 'Oswald', sans-serif;
+      font-size: 15px;
+      color: var(--fg);
+    }
+    .sched-time { font-size: 12px; color: var(--fgray); }
+    .sched-chan { font-size: 11px; color: #444; margin-top: 1px; }
+
+    .update-time {
+      text-align: center;
+      font-size: 11px;
+      color: #333;
+      padding: 16px 0 0;
+      letter-spacing: 1px;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #333;
+      padding: 8px 0 0;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <div class="hdr">
+    <div class="hdr-inner">
+      <div class="hdr-horse">
+        <svg width="50" height="50" viewBox="0 0 100 100" fill="white" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M62 8 C62 8 70 6 74 12 C78 18 72 24 68 26 C72 26 78 24 80 20 C82 16 80 10 76 8 C82 6 88 10 88 16 C88 24 80 30 72 30 L70 34 C74 36 78 42 76 50 C74 58 66 62 60 60 L58 72 C58 80 54 88 48 90 L44 90 C44 90 48 82 48 74 L46 74 C46 74 42 82 36 84 L32 84 C32 84 38 74 38 66 L36 68 C36 68 28 74 20 72 C12 70 8 62 10 54 C12 48 18 44 24 44 C20 42 14 38 12 32 C10 26 14 20 20 18 C26 16 34 20 36 26 C38 22 44 16 50 14 C54 12 58 10 62 8Z"/>
+        </svg>
+      </div>
+      <div class="hdr-title">F1 im TV</div>
+      <div class="hdr-sub">Formel 1 Programm</div>
+    </div>
+  </div>
+  <div class="stripe"></div>
+
+  <div class="sec">
+    <div class="sec-label">&#9679; Jetzt im Fernsehen</div>
+    <div id="live-content"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-label">&#8594; Als nächstes</div>
+    <div id="next-content"></div>
+  </div>
+
+  <div class="sec" style="padding-bottom: 16px;">
+    <div class="sec-label">&#128197; Nächste Termine</div>
+    <div id="sched-content"></div>
+  </div>
+
+  <div class="update-time" id="update-time"></div>
+  <div class="footer">Scuderia Ferrari &middot; Formel 1 2026</div>
+
+</div>
+
+<script>
+  const DAYS   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const MONTHS = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+  function ldt(s){ return new Date(s); }
+
+  const cal = [
+    {race:"Großer Preis von Kanada", flag:"🇨🇦", sessions:[
+      {type:"Rennen",    start:ldt("2026-06-14T20:00:00"), dur:120, sky:true, rtl:false},
+    ]},
+    {race:"Großer Preis von Spanien", flag:"🇪🇸", sessions:[
+      {type:"FP1",       start:ldt("2026-06-19T14:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-06-19T18:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-06-20T13:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-06-20T17:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-06-21T15:00:00"), dur:120, sky:true, rtl:false},
+    ]},
+    {race:"Großer Preis von Österreich", flag:"🇦🇹", sessions:[
+      {type:"FP1",       start:ldt("2026-06-26T13:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-06-26T17:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-06-27T12:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-06-27T16:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-06-28T15:00:00"), dur:120, sky:true, rtl:false},
+    ]},
+    {race:"Großer Preis von Großbritannien", flag:"🇬🇧", sessions:[
+      {type:"FP1",       start:ldt("2026-07-03T14:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-07-03T18:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-07-04T13:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-07-04T17:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-07-05T16:00:00"), dur:120, sky:true, rtl:true},
+    ]},
+    {race:"Großer Preis von Belgien", flag:"🇧🇪", sessions:[
+      {type:"FP1",       start:ldt("2026-07-24T14:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-07-24T18:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-07-25T13:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-07-25T17:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-07-26T15:00:00"), dur:120, sky:true, rtl:true},
+    ]},
+    {race:"Großer Preis von Ungarn", flag:"🇭🇺", sessions:[
+      {type:"FP1",       start:ldt("2026-07-31T14:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-07-31T18:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-08-01T13:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-08-01T17:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-08-02T15:00:00"), dur:120, sky:true, rtl:false},
+    ]},
+    {race:"Großer Preis der Niederlande", flag:"🇳🇱", sessions:[
+      {type:"FP1",       start:ldt("2026-08-28T13:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-08-28T17:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-08-29T12:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-08-29T16:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-08-30T15:00:00"), dur:120, sky:true, rtl:true},
+    ]},
+    {race:"Großer Preis von Italien", flag:"🇮🇹", sessions:[
+      {type:"FP1",       start:ldt("2026-09-04T14:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-09-04T18:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-09-05T13:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-09-05T17:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-09-06T15:00:00"), dur:120, sky:true, rtl:true},
+    ]},
+    {race:"Großer Preis von Aserbaidschan", flag:"🇦🇿", sessions:[
+      {type:"FP1",       start:ldt("2026-09-18T11:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-09-18T15:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-09-19T11:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-09-19T15:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-09-20T13:00:00"), dur:120, sky:true, rtl:false},
+    ]},
+    {race:"Großer Preis von Singapur", flag:"🇸🇬", sessions:[
+      {type:"FP1",       start:ldt("2026-10-02T11:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-10-02T15:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-10-03T11:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-10-03T15:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-10-04T14:00:00"), dur:120, sky:true, rtl:false},
+    ]},
+    {race:"Großer Preis der USA", flag:"🇺🇸", sessions:[
+      {type:"FP1",       start:ldt("2026-10-16T20:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-10-17T00:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-10-17T20:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-10-18T00:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-10-18T21:00:00"), dur:120, sky:true, rtl:false},
+    ]},
+    {race:"Großer Preis von Mexiko", flag:"🇲🇽", sessions:[
+      {type:"FP1",       start:ldt("2026-10-23T20:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-10-24T00:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-10-24T20:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-10-25T00:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-10-25T21:00:00"), dur:120, sky:true, rtl:false},
+    ]},
+    {race:"Großer Preis von Brasilien", flag:"🇧🇷", sessions:[
+      {type:"FP1",       start:ldt("2026-11-06T16:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-11-06T20:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-11-07T16:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-11-07T20:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-11-08T18:00:00"), dur:120, sky:true, rtl:true},
+    ]},
+    {race:"Großer Preis von Las Vegas", flag:"🇺🇸", sessions:[
+      {type:"FP1",       start:ldt("2026-11-20T04:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-11-20T08:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-11-21T04:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-11-21T08:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-11-22T07:00:00"), dur:120, sky:true, rtl:false},
+    ]},
+    {race:"Großer Preis von Katar", flag:"🇶🇦", sessions:[
+      {type:"FP1",       start:ldt("2026-11-27T13:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-11-27T17:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-11-28T12:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-11-28T16:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-11-29T15:00:00"), dur:120, sky:true, rtl:false},
+    ]},
+    {race:"Großer Preis von Abu Dhabi", flag:"🇦🇪", sessions:[
+      {type:"FP1",       start:ldt("2026-12-04T11:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP2",       start:ldt("2026-12-04T15:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"FP3",       start:ldt("2026-12-05T12:30:00"), dur:60,  sky:true, rtl:false},
+      {type:"Qualifying",start:ldt("2026-12-05T16:00:00"), dur:60,  sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-12-06T14:00:00"), dur:120, sky:true, rtl:false},
+    ]},
+  ];
+
+  const DAYS_DE   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const MONTHS_DE = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+  function fmtDate(d){
+    return DAYS_DE[d.getDay()]+', '+d.getDate()+'. '+MONTHS_DE[d.getMonth()];
+  }
+  function fmtTime(d){
+    return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')+' Uhr';
+  }
+  function fmtCountdown(ms){
+    if(ms < 0) return '';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    if(h >= 48){ const days = Math.floor(h/24); return `in ${days} Tagen`; }
+    if(h >= 24){ return 'in '+Math.floor(h/24)+' Tag'+( Math.floor(h/24)===1?'':'en'); }
+    if(h > 0)  { return `in ${h} Std. ${m} Min.`; }
+    return `in ${m} Minute${m===1?'':'n'}`;
+  }
+
+  function render(){
+    const now = new Date();
+    let liveItem = null, liveGp = null;
+    let nextItem = null, nextGp = null;
+    const upcoming = [];
+
+    for(const gp of cal){
+      for(const s of gp.sessions){
+        const end = new Date(s.start.getTime() + s.dur * 60000);
+        if(now >= s.start && now < end){
+          liveItem = s; liveGp = gp;
+        } else if(now < s.start){
+          if(!nextItem){ nextItem = s; nextGp = gp; }
+          upcoming.push({s, gp});
+        }
+      }
+    }
+
+    const liveEl = document.getElementById('live-content');
+    if(liveItem){
+      const chan = liveItem.rtl ? 'RTL & Sky Sport F1' : 'Sky Sport F1';
+      liveEl.innerHTML = `
+        <div class="live-card">
+          <div class="live-flag">${liveGp.flag}</div>
+          <div class="live-badge">
+            <div class="live-dot"></div>
+            <span class="live-badge-txt">LIVE</span>
+          </div>
+          <div class="live-session">${liveItem.type}</div>
+          <div class="live-race">${liveGp.race}</div>
+          <div class="live-chan">
+            <div class="live-chan-dot"></div>
+            ${chan}
+            ${liveItem.rtl ? '<span class="rtl-tag">KOSTENLOS</span>' : ''}
+          </div>
+        </div>`;
+    } else {
+      liveEl.innerHTML = `
+        <div class="nothing">
+          <div class="nothing-ico">🏁</div>
+          <div class="nothing-txt">Gerade kein F1 im TV</div>
+        </div>`;
+    }
+
+    const nextEl = document.getElementById('next-content');
+    if(nextItem){
+      const ms   = nextItem.start - now;
+      const chan  = nextItem.rtl ? 'RTL & Sky Sport F1' : 'Sky Sport F1';
+      nextEl.innerHTML = `
+        <div class="next-card">
+          <div class="next-session">${nextGp.flag} ${nextItem.type}</div>
+          <div class="next-race">${nextGp.race}</div>
+          <div class="next-row">
+            <span class="next-ico">&#128197;</span>
+            <span class="next-val">${fmtDate(nextItem.start)}</span>
+          </div>
+          <div class="next-row">
+            <span class="next-ico">&#128336;</span>
+            <span class="next-val">${fmtTime(nextItem.start)}</span>
+          </div>
+          <div class="next-chan">${chan}${nextItem.rtl ? '<span class="rtl-tag" style="margin-left:8px">KOSTENLOS</span>' : ''}</div>
+          <div class="countdown">Beginnt <span>${fmtCountdown(ms)}</span></div>
+        </div>`;
+    } else {
+      nextEl.innerHTML = `<div class="nothing"><div class="nothing-txt">Saison 2026 beendet</div></div>`;
+    }
+
+    const schedEl = document.getElementById('sched-content');
+    const show = upcoming.slice(1, 8);
+    schedEl.innerHTML = show.map(({s, gp}) => {
+      const chan = s.rtl ? 'RTL & Sky' : 'Sky Sport F1';
+      return `<div class="sched-item">
+        <div class="sched-flag">${gp.flag}</div>
+        <div class="sched-info">
+          <div class="sched-session">${s.type}</div>
+          <div class="sched-race">${gp.race}</div>
+        </div>
+        <div class="sched-right">
+          <div class="sched-date">${fmtDate(s.start)}</div>
+          <div class="sched-time">${fmtTime(s.start)}</div>
+          <div class="sched-chan">${chan}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const t = now;
+    document.getElementById('update-time').textContent =
+      'Stand: '+fmtTime(t);
+  }
+
+  render();
+  setInterval(render, 30000);
+</script>
+</body>
+</html>
