@@ -309,12 +309,81 @@
 </div>
 
 <script>
-  const DAYS   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-  const MONTHS = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  const DAYS_DE   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const MONTHS_DE = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
+  // ── Hilfsfunktionen ───────────────────────────────────────────────────
+  function fmtDate(d){
+    return DAYS_DE[d.getDay()]+', '+d.getDate()+'. '+MONTHS_DE[d.getMonth()];
+  }
+  function fmtTime(d){
+    return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')+' Uhr';
+  }
+  function fmtCountdown(ms){
+    if(ms < 0) return '';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    if(h >= 48){ return 'in '+Math.floor(h/24)+' Tagen'; }
+    if(h >= 24){ const d=Math.floor(h/24); return 'in '+d+' Tag'+(d===1?'':'en'); }
+    if(h > 0)  { return 'in '+h+' Std. '+m+' Min.'; }
+    return 'in '+m+' Minute'+(m===1?'':'n');
+  }
+
+  // ── Ländercodes → Flaggen ─────────────────────────────────────────────
+  const FLAGS = {
+    BHR:'🇧🇭', SAU:'🇸🇦', AUS:'🇦🇺', JPN:'🇯🇵', CHN:'🇨🇳',
+    USA:'🇺🇸', CAN:'🇨🇦', MCO:'🇲🇨', MON:'🇲🇨', ESP:'🇪🇸',
+    AUT:'🇦🇹', GBR:'🇬🇧', BEL:'🇧🇪', HUN:'🇭🇺', NLD:'🇳🇱',
+    ITA:'🇮🇹', AZE:'🇦🇿', SGP:'🇸🇬', MEX:'🇲🇽', BRA:'🇧🇷',
+    QAT:'🇶🇦', UAE:'🇦🇪',
+  };
+
+  // ── API-Sessionname → Deutsch ─────────────────────────────────────────
+  const SESSION_DE = {
+    'Practice 1':'FP1', 'Practice 2':'FP2', 'Practice 3':'FP3',
+    'Qualifying':'Qualifying', 'Race':'Rennen',
+    'Sprint':'Sprint', 'Sprint Qualifying':'Sprintqualifying',
+  };
+
+  // ── Welche Rennen laufen auf RTL? ─────────────────────────────────────
+  const RTL_RACE_NAMES = ['Spain','Britain','Belgium','Netherlands','Italy','Brazil'];
+  function isRTL(meetingName, sessionName){
+    return sessionName === 'Race' && RTL_RACE_NAMES.some(n => meetingName.includes(n));
+  }
+
+  // ── API-Daten → internes Format ───────────────────────────────────────
+  function apiToCalendar(sessions){
+    const meetings = {};
+    for(const s of sessions){
+      const k = s.meeting_key;
+      if(!meetings[k]) meetings[k] = {
+        race: s.meeting_name,
+        flag: FLAGS[s.country_code] || '🏁',
+        sessions: [],
+        sortKey: new Date(s.date_start).getTime(),
+      };
+      const start = new Date(s.date_start);
+      const end   = new Date(s.date_end);
+      const dur   = Math.round((end - start) / 60000);
+      meetings[k].sessions.push({
+        type:  SESSION_DE[s.session_name] || s.session_name,
+        start, dur,
+        sky:   true,
+        rtl:   isRTL(s.meeting_name, s.session_name),
+      });
+    }
+    return Object.values(meetings)
+      .sort((a,b) => a.sortKey - b.sortKey)
+      .map(m => {
+        m.sessions.sort((a,b) => a.start - b.start);
+        return m;
+      });
+  }
+
+  // ── Fallback-Kalender (hardcoded) ─────────────────────────────────────
   function ldt(s){ return new Date(s); }
 
-  const cal = [
+  const FALLBACK_CAL = [
     // ── Spanien (Barcelona) – 12.–14. Juni ──────────────────────────────
     {race:"Großer Preis von Spanien", flag:"🇪🇸", sessions:[
       {type:"FP1",       start:ldt("2026-06-12T14:30:00"), dur:60,  sky:true, rtl:false},
@@ -443,34 +512,19 @@
       {type:"Qualifying",start:ldt("2026-12-05T16:00:00"), dur:60,  sky:true, rtl:false},
       {type:"Rennen",    start:ldt("2026-12-06T14:00:00"), dur:120, sky:true, rtl:false},
     ]},
-  ];
+  ]; // Ende FALLBACK_CAL
 
-  const DAYS_DE   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-  const MONTHS_DE = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  // ── Aktueller Kalender (wird durch API befüllt oder Fallback) ─────────
+  let activeCal = FALLBACK_CAL;
 
-  function fmtDate(d){
-    return DAYS_DE[d.getDay()]+', '+d.getDate()+'. '+MONTHS_DE[d.getMonth()];
-  }
-  function fmtTime(d){
-    return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')+' Uhr';
-  }
-  function fmtCountdown(ms){
-    if(ms < 0) return '';
-    const h = Math.floor(ms / 3600000);
-    const m = Math.floor((ms % 3600000) / 60000);
-    if(h >= 48){ const days = Math.floor(h/24); return `in ${days} Tagen`; }
-    if(h >= 24){ return 'in '+Math.floor(h/24)+' Tag'+( Math.floor(h/24)===1?'':'en'); }
-    if(h > 0)  { return `in ${h} Std. ${m} Min.`; }
-    return `in ${m} Minute${m===1?'':'n'}`;
-  }
-
+  // ── Render ────────────────────────────────────────────────────────────
   function render(){
     const now = new Date();
     let liveItem = null, liveGp = null;
     let nextItem = null, nextGp = null;
     const upcoming = [];
 
-    for(const gp of cal){
+    for(const gp of activeCal){
       for(const s of gp.sessions){
         const end = new Date(s.start.getTime() + s.dur * 60000);
         if(now >= s.start && now < end){
@@ -510,8 +564,8 @@
 
     const nextEl = document.getElementById('next-content');
     if(nextItem){
-      const ms   = nextItem.start - now;
-      const chan  = nextItem.rtl ? 'RTL & Sky Sport F1' : 'Sky Sport F1';
+      const ms  = nextItem.start - now;
+      const chan = nextItem.rtl ? 'RTL & Sky Sport F1' : 'Sky Sport F1';
       nextEl.innerHTML = `
         <div class="next-card">
           <div class="next-session">${nextGp.flag} ${nextItem.type}</div>
@@ -549,13 +603,54 @@
       </div>`;
     }).join('');
 
-    const t = now;
-    document.getElementById('update-time').textContent =
-      'Stand: '+fmtTime(t);
+    document.getElementById('update-time').textContent = 'Stand: ' + fmtTime(now);
   }
 
-  render();
-  setInterval(render, 30000);
+  // ── API-Fetch mit localStorage-Cache ─────────────────────────────────
+  const CACHE_KEY = 'f1_sessions_v2';
+  const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 Stunden
+
+  async function fetchFromAPI(){
+    const res = await fetch('https://api.openf1.org/v1/sessions?year=2026');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    if(!Array.isArray(data) || data.length === 0) throw new Error('Leere Antwort');
+    return data;
+  }
+
+  async function loadCalendar(){
+    // Cache prüfen
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if(cached && (Date.now() - cached.ts) < CACHE_TTL){
+        activeCal = apiToCalendar(cached.data);
+        render();
+        return;
+      }
+    } catch(_){}
+
+    // API abrufen
+    try {
+      const data = await fetchFromAPI();
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ts: Date.now(), data}));
+      activeCal = apiToCalendar(data);
+    } catch(err){
+      console.warn('API nicht erreichbar, verwende Fallback-Kalender:', err.message);
+      activeCal = FALLBACK_CAL;
+    }
+    render();
+  }
+
+  // ── Start ─────────────────────────────────────────────────────────────
+  render(); // sofort mit Fallback zeigen (kein leerer Bildschirm)
+  loadCalendar(); // dann API nachladen
+
+  setInterval(render, 30000); // Anzeige alle 30s aktualisieren (Countdown usw.)
+
+  // Wenn Oma die App nach Stunden wieder öffnet → fresh nachladen
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible') loadCalendar();
+  });
 </script>
 </body>
 </html>
