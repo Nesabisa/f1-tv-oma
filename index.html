@@ -407,9 +407,10 @@
   };
 
   // ── Welche Rennen laufen auf RTL? ─────────────────────────────────────
-  const RTL_RACE_NAMES = ['Spain','Britain','Belgium','Netherlands','Italy','Brazil'];
+  const RTL_KEYWORDS = ['spain','spanish','brit','belgian','belgium','dutch','nether','italian','italy','brazil'];
   function isRTL(meetingName, sessionName){
-    return sessionName === 'Race' && RTL_RACE_NAMES.some(n => meetingName.includes(n));
+    const lower = meetingName.toLowerCase();
+    return sessionName === 'Race' && RTL_KEYWORDS.some(n => lower.includes(n));
   }
 
   // ── API-Daten → internes Format ───────────────────────────────────────
@@ -649,11 +650,14 @@
     const schedEl = document.getElementById('sched-content');
     const show = upcoming.slice(1, 8);
     schedEl.innerHTML = show.map(({s, gp}) => {
-      const chan = s.rtl ? 'RTL & Sky' : 'Sky Sport F1';
+      const rtlBadge = s.rtl
+        ? `<span style="background:var(--fg);color:#000;font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:1px;margin-left:6px;vertical-align:middle">KOSTENLOS</span>`
+        : '';
+      const chan = s.rtl ? 'RTL & Sky Sport F1' : 'Sky Sport F1';
       return `<div class="sched-item">
         <div class="sched-flag">${gp.flag}</div>
         <div class="sched-info">
-          <div class="sched-session">${s.type}</div>
+          <div class="sched-session">${s.type}${rtlBadge}</div>
           <div class="sched-race">${gp.race}</div>
         </div>
         <div class="sched-right">
