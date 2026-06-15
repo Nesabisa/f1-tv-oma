@@ -258,6 +258,59 @@
     .sched-time { font-size: 14px; color: var(--fgray); margin-top: 1px; }
     .sched-chan { font-size: 12px; color: #888; margin-top: 2px; }
 
+    .stand-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #222;
+    }
+    .stand-item:last-child { border-bottom: none; }
+    .stand-pos {
+      font-family: 'Oswald', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--fgray);
+      width: 32px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .stand-pos.p1 { color: #FFD700; }
+    .stand-pos.p2 { color: #C0C0C0; }
+    .stand-pos.p3 { color: #CD7F32; }
+    .stand-info { flex: 1; min-width: 0; }
+    .stand-name {
+      font-family: 'Oswald', sans-serif;
+      font-size: 20px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stand-team {
+      font-size: 13px;
+      color: var(--fgray);
+      margin-top: 2px;
+    }
+    .stand-right { text-align: right; flex-shrink: 0; }
+    .stand-pts {
+      font-family: 'Oswald', sans-serif;
+      font-size: 20px;
+      color: var(--fg);
+    }
+    .stand-pts-label { font-size: 11px; color: #666; }
+    .stand-gap {
+      font-family: 'Oswald', sans-serif;
+      font-size: 16px;
+      color: #bbb;
+    }
+    .stand-loading {
+      text-align: center;
+      padding: 20px;
+      color: var(--fgray);
+      font-size: 15px;
+    }
+
     .update-time {
       text-align: center;
       font-size: 12px;
@@ -304,6 +357,11 @@
   <div class="sec" style="padding-bottom: 16px;">
     <div class="sec-label">&#128197; Nächste Termine</div>
     <div id="sched-content"></div>
+  </div>
+
+  <div class="sec" style="padding-bottom: 16px;">
+    <div class="sec-label" id="stand-label">&#127942; Fahrerwertung</div>
+    <div id="stand-content"><div class="stand-loading">Wird geladen…</div></div>
   </div>
 
   <div class="update-time" id="update-time"></div>
@@ -652,8 +710,152 @@
 
   // Wenn Oma die App nach Stunden wieder öffnet → fresh nachladen
   document.addEventListener('visibilitychange', () => {
-    if(document.visibilityState === 'visible') loadCalendar();
+    if(document.visibilityState === 'visible'){
+      loadCalendar();
+      loadStandings();
+    }
   });
+
+  // ── Team-Farben ───────────────────────────────────────────────────────
+  const TEAM_COLORS = {
+    'ferrari':    '#DC0000',
+    'mclaren':    '#FF8000',
+    'red bull':   '#3671C6',
+    'mercedes':   '#27F4D2',
+    'aston martin':'#229971',
+    'alpine':     '#FF87BC',
+    'williams':   '#64C4FF',
+    'haas':       '#B6BABD',
+    'sauber':     '#52E252',
+    'audi':       '#52E252',
+    'cadillac':   '#6B4FBB',
+    'racing bulls':'#6692FF',
+  };
+  function teamColor(name){
+    const key = (name||'').toLowerCase();
+    for(const [k,v] of Object.entries(TEAM_COLORS)){
+      if(key.includes(k)) return v;
+    }
+    return '#888';
+  }
+
+  // ── Fahrerwertung (Jolpica API) ───────────────────────────────────────
+  const STAND_CACHE_KEY = 'f1_standings_2026';
+  const STAND_TTL = 12 * 60 * 60 * 1000; // 12 Stunden
+
+  async function fetchStandings(){
+    const res = await fetch('https://api.jolpi.ca/ergast/f1/2026/driverStandings.json');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const json = await res.json();
+    return json.MRData.StandingsTable.StandingsLists[0].DriverStandings;
+  }
+
+  // ── Live-Positionen (OpenF1, nur während Session) ─────────────────────
+  async function fetchLivePositions(){
+    const res = await fetch('https://api.openf1.org/v1/position?session_key=latest');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    // Neuesten Eintrag pro Fahrer
+    const latest = {};
+    for(const d of data){
+      if(!latest[d.driver_number] || d.date > latest[d.driver_number].date)
+        latest[d.driver_number] = d;
+    }
+    // Fahrernamen nachladen
+    const drRes = await fetch('https://api.openf1.org/v1/drivers?session_key=latest');
+    const drivers = await drRes.json();
+    const drMap = {};
+    for(const d of drivers) drMap[d.driver_number] = d;
+    return Object.values(latest)
+      .sort((a,b) => a.position - b.position)
+      .slice(0, 10)
+      .map(p => ({
+        pos: p.position,
+        name: drMap[p.driver_number]
+          ? drMap[p.driver_number].last_name
+          : '#'+p.driver_number,
+        team: drMap[p.driver_number]?.team_name || '',
+        number: p.driver_number,
+      }));
+  }
+
+  function renderStandings(list, isLive){
+    const label = document.getElementById('stand-label');
+    const el    = document.getElementById('stand-content');
+    label.innerHTML = isLive
+      ? '<span style="color:var(--fr)">&#9679;</span> Live-Positionen'
+      : '&#127942; Fahrerwertung 2026';
+
+    el.innerHTML = list.map((d,i) => {
+      const posClass = i===0?'p1':i===1?'p2':i===2?'p3':'';
+      const color = teamColor(d.team);
+      const right = isLive
+        ? `<div class="stand-gap">${d.gap||''}</div>`
+        : `<div class="stand-pts">${d.pts}</div><div class="stand-pts-label">Punkte</div>`;
+      return `<div class="stand-item">
+        <div class="stand-pos ${posClass}">${d.pos}</div>
+        <div style="width:4px;height:36px;border-radius:2px;background:${color};flex-shrink:0"></div>
+        <div class="stand-info">
+          <div class="stand-name">${d.name}</div>
+          <div class="stand-team">${d.team}</div>
+        </div>
+        <div class="stand-right">${right}</div>
+      </div>`;
+    }).join('');
+  }
+
+  async function loadStandings(){
+    // Erst aus Cache
+    try {
+      const c = JSON.parse(localStorage.getItem(STAND_CACHE_KEY)||'null');
+      if(c && (Date.now()-c.ts) < STAND_TTL){
+        renderStandings(c.data, false);
+      }
+    } catch(_){}
+
+    // Wenn gerade eine Session live ist → live Positionen zeigen
+    const now = new Date();
+    let isLive = false;
+    for(const gp of activeCal){
+      for(const s of gp.sessions){
+        const end = new Date(s.start.getTime() + s.dur*60000);
+        if(now >= s.start && now < end){ isLive = true; break; }
+      }
+      if(isLive) break;
+    }
+
+    if(isLive){
+      try {
+        const live = await fetchLivePositions();
+        renderStandings(live, true);
+      } catch(_){
+        // live nicht verfügbar → Wertung zeigen
+        loadChampStandings();
+      }
+    } else {
+      loadChampStandings();
+    }
+  }
+
+  async function loadChampStandings(){
+    try {
+      const data = await fetchStandings();
+      const list = data.map(d => ({
+        pos: +d.position,
+        name: d.Driver.familyName,
+        team: d.Constructors[0]?.name || '',
+        pts:  d.points,
+      }));
+      localStorage.setItem(STAND_CACHE_KEY, JSON.stringify({ts:Date.now(), data:list}));
+      renderStandings(list, false);
+    } catch(err){
+      document.getElementById('stand-content').innerHTML =
+        '<div class="stand-loading">Wertung nicht verfügbar</div>';
+    }
+  }
+
+  loadStandings();
+  setInterval(loadStandings, 60000); // Live-Positionen jede Minute aktualisieren
 </script>
 </body>
 </html>
