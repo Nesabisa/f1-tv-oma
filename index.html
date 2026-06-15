@@ -395,11 +395,23 @@
     'Sprint':'Sprint', 'Sprint Qualifying':'Sprintqualifying',
   };
 
-  // ── Welche Rennen laufen auf RTL? ─────────────────────────────────────
+  // ── Welche Sender zeigen welche Rennen? ───────────────────────────────
   const RTL_KEYWORDS = ['spain','spanish','brit','belgian','belgium','dutch','nether','italian','italy','brazil'];
+  const ORF_KEYWORDS = ['austrian','austria','monaco','belgian','belgium','brit','dutch','nether','italian','italy'];
+
   function isRTL(meetingName, sessionName){
     const lower = meetingName.toLowerCase();
     return sessionName === 'Race' && RTL_KEYWORDS.some(n => lower.includes(n));
+  }
+  function isORF(meetingName, sessionName){
+    const lower = meetingName.toLowerCase();
+    return (sessionName === 'Race' || sessionName === 'Qualifying') && ORF_KEYWORDS.some(n => lower.includes(n));
+  }
+  function buildChan(rtl, orf){
+    const parts = ['Sky Sport F1'];
+    if(rtl) parts.push('RTL');
+    if(orf) parts.push('ORF 1');
+    return parts.join(' · ');
   }
 
   // ── API-Daten → internes Format ───────────────────────────────────────
@@ -421,6 +433,7 @@
         start, dur,
         sky:   true,
         rtl:   isRTL(s.meeting_name, s.session_name),
+        orf:   isORF(s.meeting_name, s.session_name),
       });
     }
     return Object.values(meetings)
@@ -441,15 +454,15 @@
       {type:"FP2",       start:ldt("2026-06-12T18:00:00"), dur:60,  sky:true, rtl:false},
       {type:"FP3",       start:ldt("2026-06-13T13:30:00"), dur:60,  sky:true, rtl:false},
       {type:"Qualifying",start:ldt("2026-06-13T17:00:00"), dur:60,  sky:true, rtl:true},
-      {type:"Rennen",    start:ldt("2026-06-14T15:00:00"), dur:120, sky:true, rtl:false},
+      {type:"Rennen",    start:ldt("2026-06-14T15:00:00"), dur:120, sky:true, rtl:false, orf:false},
     ]},
     // ── Österreich (Spielberg) – 26.–28. Juni ───────────────────────────
     {race:"Großer Preis von Österreich", flag:"🇦🇹", sessions:[
-      {type:"FP1",       start:ldt("2026-06-26T13:30:00"), dur:60,  sky:true, rtl:false},
-      {type:"FP2",       start:ldt("2026-06-26T17:00:00"), dur:60,  sky:true, rtl:false},
-      {type:"FP3",       start:ldt("2026-06-27T12:30:00"), dur:60,  sky:true, rtl:false},
-      {type:"Qualifying",start:ldt("2026-06-27T16:00:00"), dur:60,  sky:true, rtl:false},
-      {type:"Rennen",    start:ldt("2026-06-28T15:00:00"), dur:120, sky:true, rtl:false},
+      {type:"FP1",       start:ldt("2026-06-26T13:30:00"), dur:60,  sky:true, rtl:false, orf:false},
+      {type:"FP2",       start:ldt("2026-06-26T17:00:00"), dur:60,  sky:true, rtl:false, orf:false},
+      {type:"FP3",       start:ldt("2026-06-27T12:30:00"), dur:60,  sky:true, rtl:false, orf:false},
+      {type:"Qualifying",start:ldt("2026-06-27T16:00:00"), dur:60,  sky:true, rtl:false, orf:true},
+      {type:"Rennen",    start:ldt("2026-06-28T15:00:00"), dur:120, sky:true, rtl:false, orf:true},
     ]},
     // ── Großbritannien (Silverstone) – 3.–5. Juli  🏃 SPRINT ────────────
     {race:"Großer Preis von Großbritannien", flag:"🇬🇧", sessions:[
@@ -589,7 +602,7 @@
 
     const liveEl = document.getElementById('live-content');
     if(liveItem){
-      const chan = liveItem.rtl ? 'RTL & Sky Sport F1' : 'Sky Sport F1';
+      const chan = buildChan(liveItem.rtl, liveItem.orf);
       liveEl.innerHTML = `
         <div class="live-card">
           <div class="live-flag">${liveGp.flag}</div>
@@ -615,7 +628,7 @@
     const nextEl = document.getElementById('next-content');
     if(nextItem){
       const ms  = nextItem.start - now;
-      const chan = nextItem.rtl ? 'RTL & Sky Sport F1' : 'Sky Sport F1';
+      const chan = buildChan(nextItem.rtl, nextItem.orf);
       nextEl.innerHTML = `
         <div class="next-card">
           <div class="next-session">${nextGp.flag} ${nextItem.type}</div>
@@ -638,7 +651,7 @@
     const schedEl = document.getElementById('sched-content');
     const show = upcoming.slice(1, 8);
     schedEl.innerHTML = show.map(({s, gp}) => {
-      const chan = s.rtl ? 'Sky Sport F1 & RTL' : 'Sky Sport F1';
+      const chan = buildChan(s.rtl, s.orf);
       return `<div class="sched-item">
         <div class="sched-flag">${gp.flag}</div>
         <div class="sched-info">
