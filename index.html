@@ -159,17 +159,6 @@
       border-radius: 50%;
       flex-shrink: 0;
     }
-    .rtl-tag {
-      background: var(--fg);
-      color: #000;
-      font-family: 'Oswald', sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 4px;
-      letter-spacing: 1px;
-    }
-
     .nothing {
       background: var(--fc);
       border-radius: 16px;
@@ -613,7 +602,6 @@
           <div class="live-chan">
             <div class="live-chan-dot"></div>
             ${chan}
-            ${liveItem.rtl ? '<span class="rtl-tag">KOSTENLOS</span>' : ''}
           </div>
         </div>`;
     } else {
@@ -640,7 +628,7 @@
             <span class="next-ico">&#128336;</span>
             <span class="next-val">${fmtTime(nextItem.start)}</span>
           </div>
-          <div class="next-chan">${chan}${nextItem.rtl ? '<span class="rtl-tag" style="margin-left:8px">KOSTENLOS</span>' : ''}</div>
+          <div class="next-chan">${chan}</div>
           <div class="countdown">Beginnt <span>${fmtCountdown(ms)}</span></div>
         </div>`;
     } else {
@@ -650,14 +638,11 @@
     const schedEl = document.getElementById('sched-content');
     const show = upcoming.slice(1, 8);
     schedEl.innerHTML = show.map(({s, gp}) => {
-      const rtlBadge = s.rtl
-        ? `<span style="background:var(--fg);color:#000;font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:1px;margin-left:6px;vertical-align:middle">KOSTENLOS</span>`
-        : '';
-      const chan = s.rtl ? 'RTL & Sky Sport F1' : 'Sky Sport F1';
+      const chan = s.rtl ? 'Sky Sport F1 & RTL' : 'Sky Sport F1';
       return `<div class="sched-item">
         <div class="sched-flag">${gp.flag}</div>
         <div class="sched-info">
-          <div class="sched-session">${s.type}${rtlBadge}</div>
+          <div class="sched-session">${s.type}</div>
           <div class="sched-race">${gp.race}</div>
         </div>
         <div class="sched-right">
