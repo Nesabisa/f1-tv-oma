@@ -425,18 +425,13 @@
   </div>
 
   <div class="sec" style="padding-bottom: 16px;">
-    <div class="sec-label">&#128197; Nächste Termine</div>
-    <div id="sched-content"></div>
+    <div class="sec-label">&#128197; Rennen 2026</div>
+    <div id="season-content"></div>
   </div>
 
   <div class="sec" style="padding-bottom: 16px;">
     <div class="sec-label" id="stand-label">&#127942; Fahrerwertung</div>
     <div id="stand-content"><div class="stand-loading">Wird geladen…</div></div>
-  </div>
-
-  <div class="sec" style="padding-bottom: 16px;">
-    <div class="sec-label">&#128197; Saisonkalender 2026</div>
-    <div id="season-content"></div>
   </div>
 
   <div class="update-time" id="update-time"></div>
@@ -734,23 +729,6 @@
       nextEl.innerHTML = `<div class="nothing"><div class="nothing-txt">Saison 2026 beendet</div></div>`;
     }
 
-    const schedEl = document.getElementById('sched-content');
-    const show = upcoming.slice(1, 8);
-    schedEl.innerHTML = show.map(({s, gp}) => {
-      const chan = buildChan(s.rtl, s.orf);
-      return `<div class="sched-item">
-        <div class="sched-flag">${gp.flag}</div>
-        <div class="sched-info">
-          <div class="sched-session">${s.type}</div>
-          <div class="sched-race">${gp.race}</div>
-        </div>
-        <div class="sched-right">
-          <div class="sched-date">${fmtDate(s.start)}</div>
-          <div class="sched-time">${fmtTime(s.start)}</div>
-          <div class="sched-chan">${chan}</div>
-        </div>
-      </div>`;
-    }).join('');
 
     document.getElementById('update-time').textContent = 'Stand: ' + fmtTime(now);
   }
@@ -1127,12 +1105,17 @@
     const el  = document.getElementById('season-content');
     let autoOpen = -1;
 
-    el.innerHTML = FULL_CAL.map((r, idx) => {
+    const visible = FULL_CAL.filter(r => {
+      const lastDate = new Date(Math.max(...r.sessions.map(s => s.dt)));
+      return now <= new Date(lastDate.getTime() + 3*60*60*1000);
+    });
+
+    el.innerHTML = visible.map((r, idx) => {
       const allDates  = r.sessions.map(s => s.dt);
       const start     = new Date(Math.min(...allDates));
       const lastDate  = new Date(Math.max(...allDates));
       const end       = new Date(lastDate.getTime() + 3*60*60*1000);
-      const past      = now > end;
+      const past      = false;
       const curr      = now >= start && now <= end;
       if(curr) autoOpen = idx;
 
