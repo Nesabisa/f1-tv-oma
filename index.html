@@ -247,6 +247,48 @@
     .sched-time { font-size: 14px; color: var(--fgray); margin-top: 1px; }
     .sched-chan { font-size: 12px; color: #888; margin-top: 2px; }
 
+    .season-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid #1e1e1e;
+    }
+    .season-item:last-child { border-bottom: none; }
+    .season-item.past { opacity: 0.4; }
+    .season-item.current { border-left: 3px solid var(--fr); padding-left: 12px; }
+    .season-flag { font-size: 28px; flex-shrink: 0; width: 36px; text-align: center; }
+    .season-info { flex: 1; min-width: 0; }
+    .season-name {
+      font-family: 'Oswald', sans-serif;
+      font-size: 18px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .season-loc {
+      font-size: 12px;
+      color: var(--fgray);
+      margin-top: 2px;
+    }
+    .season-chan {
+      font-size: 11px;
+      color: #777;
+      margin-top: 3px;
+    }
+    .season-right { text-align: right; flex-shrink: 0; }
+    .season-date {
+      font-family: 'Oswald', sans-serif;
+      font-size: 15px;
+      color: var(--fg);
+    }
+    .season-rnd {
+      font-size: 11px;
+      color: #666;
+      margin-top: 2px;
+    }
+
     .stand-item {
       display: flex;
       align-items: center;
@@ -351,6 +393,11 @@
   <div class="sec" style="padding-bottom: 16px;">
     <div class="sec-label" id="stand-label">&#127942; Fahrerwertung</div>
     <div id="stand-content"><div class="stand-loading">Wird geladen…</div></div>
+  </div>
+
+  <div class="sec" style="padding-bottom: 16px;">
+    <div class="sec-label">&#128197; Saisonkalender 2026</div>
+    <div id="season-content"></div>
   </div>
 
   <div class="update-time" id="update-time"></div>
@@ -857,7 +904,66 @@
   }
 
   loadStandings();
-  setInterval(loadStandings, 60000); // Live-Positionen jede Minute aktualisieren
+  setInterval(loadStandings, 60000);
+
+  // ── Saisonkalender ────────────────────────────────────────────────────
+  const FULL_CAL = [
+    {rnd:1,  race:"Australien",       loc:"Albert Park, Melbourne",         flag:"🇦🇺", from:"2026-03-06", to:"2026-03-08",  rtl:false, orf:false},
+    {rnd:2,  race:"China",            loc:"Shanghai International Circuit", flag:"🇨🇳", from:"2026-03-13", to:"2026-03-15",  rtl:false, orf:false},
+    {rnd:3,  race:"Japan",            loc:"Suzuka Circuit",                 flag:"🇯🇵", from:"2026-03-27", to:"2026-03-29",  rtl:false, orf:false},
+    {rnd:4,  race:"Bahrain",          loc:"Bahrain International Circuit",  flag:"🇧🇭", from:"2026-04-10", to:"2026-04-12",  rtl:false, orf:false},
+    {rnd:5,  race:"Saudi-Arabien",    loc:"Jeddah Corniche Circuit",        flag:"🇸🇦", from:"2026-04-17", to:"2026-04-19",  rtl:false, orf:false},
+    {rnd:6,  race:"Miami",            loc:"Miami International Autodrome",  flag:"🇺🇸", from:"2026-05-01", to:"2026-05-03",  rtl:false, orf:false},
+    {rnd:7,  race:"Kanada",           loc:"Circuit Gilles Villeneuve",      flag:"🇨🇦", from:"2026-05-22", to:"2026-05-24",  rtl:false, orf:false},
+    {rnd:8,  race:"Monaco",           loc:"Circuit de Monaco",              flag:"🇲🇨", from:"2026-06-05", to:"2026-06-07",  rtl:false, orf:true},
+    {rnd:9,  race:"Spanien",          loc:"Circuit de Barcelona-Catalunya", flag:"🇪🇸", from:"2026-06-12", to:"2026-06-14",  rtl:true,  orf:false},
+    {rnd:10, race:"Österreich",       loc:"Red Bull Ring, Spielberg",       flag:"🇦🇹", from:"2026-06-26", to:"2026-06-28",  rtl:false, orf:true},
+    {rnd:11, race:"Großbritannien",   loc:"Silverstone Circuit",            flag:"🇬🇧", from:"2026-07-03", to:"2026-07-05",  rtl:true,  orf:true},
+    {rnd:12, race:"Belgien",          loc:"Circuit de Spa-Francorchamps",   flag:"🇧🇪", from:"2026-07-17", to:"2026-07-19",  rtl:true,  orf:true},
+    {rnd:13, race:"Ungarn",           loc:"Hungaroring, Budapest",          flag:"🇭🇺", from:"2026-07-24", to:"2026-07-26",  rtl:false, orf:false},
+    {rnd:14, race:"Niederlande",      loc:"Circuit Zandvoort",              flag:"🇳🇱", from:"2026-08-21", to:"2026-08-23",  rtl:true,  orf:true},
+    {rnd:15, race:"Italien",          loc:"Autodromo Nazionale Monza",      flag:"🇮🇹", from:"2026-09-04", to:"2026-09-06",  rtl:true,  orf:true},
+    {rnd:16, race:"Madrid",           loc:"Circuito de Madrid",             flag:"🇪🇸", from:"2026-09-11", to:"2026-09-13",  rtl:false, orf:false},
+    {rnd:17, race:"Aserbaidschan",    loc:"Baku City Circuit",              flag:"🇦🇿", from:"2026-09-25", to:"2026-09-27",  rtl:false, orf:false},
+    {rnd:18, race:"Singapur",         loc:"Marina Bay Street Circuit",      flag:"🇸🇬", from:"2026-10-09", to:"2026-10-11",  rtl:false, orf:false},
+    {rnd:19, race:"USA",              loc:"Circuit of the Americas, Austin", flag:"🇺🇸", from:"2026-10-23", to:"2026-10-25",  rtl:false, orf:false},
+    {rnd:20, race:"Mexiko",           loc:"Autodromo Hermanos Rodriguez",   flag:"🇲🇽", from:"2026-10-30", to:"2026-11-01",  rtl:false, orf:false},
+    {rnd:21, race:"Brasilien",        loc:"Autodromo Jose Carlos Pace",     flag:"🇧🇷", from:"2026-11-06", to:"2026-11-08",  rtl:true,  orf:false},
+    {rnd:22, race:"Las Vegas",        loc:"Las Vegas Strip Circuit",        flag:"🇺🇸", from:"2026-11-19", to:"2026-11-21",  rtl:false, orf:false},
+    {rnd:23, race:"Katar",            loc:"Losail International Circuit",   flag:"🇶🇦", from:"2026-11-27", to:"2026-11-29",  rtl:false, orf:false},
+    {rnd:24, race:"Abu Dhabi",        loc:"Yas Marina Circuit",             flag:"🇦🇪", from:"2026-12-04", to:"2026-12-06",  rtl:false, orf:false},
+  ];
+
+  function renderSeason(){
+    const now = new Date();
+    const el  = document.getElementById('season-content');
+    el.innerHTML = FULL_CAL.map(r => {
+      const start = new Date(r.from);
+      const end   = new Date(r.to + 'T23:59:59');
+      const past  = now > end;
+      const curr  = now >= start && now <= end;
+      const chan  = buildChan(r.rtl, r.orf);
+      const d1    = start.getDate()+'. '+MONTHS_DE[start.getMonth()];
+      const d2    = end.getDate()+'. '+MONTHS_DE[end.getMonth()];
+      const dateStr = start.getMonth()===end.getMonth()
+        ? start.getDate()+'–'+end.getDate()+'. '+MONTHS_DE[end.getMonth()]
+        : d1+' – '+d2;
+      return `<div class="season-item${past?' past':''}${curr?' current':''}">
+        <div class="season-flag">${r.flag}</div>
+        <div class="season-info">
+          <div class="season-name">${r.race}</div>
+          <div class="season-loc">${r.loc}</div>
+          <div class="season-chan">${chan}</div>
+        </div>
+        <div class="season-right">
+          <div class="season-date">${dateStr}</div>
+          <div class="season-rnd">Rennen ${r.rnd}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  renderSeason(); // Live-Positionen jede Minute aktualisieren
 </script>
 </body>
 </html>
