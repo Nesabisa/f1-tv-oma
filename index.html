@@ -248,14 +248,19 @@
     .sched-chan { font-size: 12px; color: #888; margin-top: 2px; }
 
     .season-item {
+      border-bottom: 1px solid #1e1e1e;
+    }
+    .season-item:last-child { border-bottom: none; }
+    .season-row {
       display: flex;
       align-items: center;
       gap: 14px;
       padding: 14px 0;
-      border-bottom: 1px solid #1e1e1e;
+      cursor: pointer;
+      user-select: none;
     }
-    .season-item:last-child { border-bottom: none; }
-    .season-item.past { opacity: 0.4; }
+    .season-item.past .season-row { opacity: 0.4; }
+    .season-item.current .season-row { opacity: 1; }
     .season-item.current { border-left: 3px solid var(--fr); padding-left: 12px; }
     .season-flag { font-size: 28px; flex-shrink: 0; width: 36px; text-align: center; }
     .season-info { flex: 1; min-width: 0; }
@@ -267,26 +272,60 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .season-loc {
-      font-size: 12px;
-      color: var(--fgray);
-      margin-top: 2px;
-    }
-    .season-chan {
-      font-size: 11px;
-      color: #777;
-      margin-top: 3px;
-    }
+    .season-loc { font-size: 12px; color: var(--fgray); margin-top: 2px; }
     .season-right { text-align: right; flex-shrink: 0; }
     .season-date {
       font-family: 'Oswald', sans-serif;
       font-size: 15px;
       color: var(--fg);
     }
-    .season-rnd {
-      font-size: 11px;
-      color: #666;
-      margin-top: 2px;
+    .season-rnd { font-size: 11px; color: #666; margin-top: 2px; }
+    .season-chevron {
+      font-size: 14px;
+      color: #555;
+      flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    .season-item.open .season-chevron { transform: rotate(90deg); color: var(--fg); }
+
+    .season-sessions {
+      display: none;
+      background: #111;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .season-item.open .season-sessions { display: block; }
+    .sess-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .sess-row:last-child { border-bottom: none; }
+    .sess-row.past-sess { opacity: 0.4; }
+    .sess-row.live-sess { background: rgba(220,0,0,0.15); }
+    .sess-type {
+      font-family: 'Oswald', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      width: 120px;
+      flex-shrink: 0;
+    }
+    .sess-date { font-size: 13px; color: var(--fgray); flex: 1; }
+    .sess-time {
+      font-family: 'Oswald', sans-serif;
+      font-size: 16px;
+      color: var(--fg);
+      flex-shrink: 0;
+    }
+    .sess-live-dot {
+      width: 8px; height: 8px;
+      background: var(--fr);
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: blink 1.4s infinite;
     }
 
     .stand-item {
@@ -908,59 +947,238 @@
 
   // ── Saisonkalender ────────────────────────────────────────────────────
   const FULL_CAL = [
-    {rnd:1,  race:"Australien",       loc:"Albert Park, Melbourne",         flag:"🇦🇺", from:"2026-03-06", to:"2026-03-08",  rtl:false, orf:false},
-    {rnd:2,  race:"China",            loc:"Shanghai International Circuit", flag:"🇨🇳", from:"2026-03-13", to:"2026-03-15",  rtl:false, orf:false},
-    {rnd:3,  race:"Japan",            loc:"Suzuka Circuit",                 flag:"🇯🇵", from:"2026-03-27", to:"2026-03-29",  rtl:false, orf:false},
-    {rnd:4,  race:"Bahrain",          loc:"Bahrain International Circuit",  flag:"🇧🇭", from:"2026-04-10", to:"2026-04-12",  rtl:false, orf:false},
-    {rnd:5,  race:"Saudi-Arabien",    loc:"Jeddah Corniche Circuit",        flag:"🇸🇦", from:"2026-04-17", to:"2026-04-19",  rtl:false, orf:false},
-    {rnd:6,  race:"Miami",            loc:"Miami International Autodrome",  flag:"🇺🇸", from:"2026-05-01", to:"2026-05-03",  rtl:false, orf:false},
-    {rnd:7,  race:"Kanada",           loc:"Circuit Gilles Villeneuve",      flag:"🇨🇦", from:"2026-05-22", to:"2026-05-24",  rtl:false, orf:false},
-    {rnd:8,  race:"Monaco",           loc:"Circuit de Monaco",              flag:"🇲🇨", from:"2026-06-05", to:"2026-06-07",  rtl:false, orf:true},
-    {rnd:9,  race:"Spanien",          loc:"Circuit de Barcelona-Catalunya", flag:"🇪🇸", from:"2026-06-12", to:"2026-06-14",  rtl:true,  orf:false},
-    {rnd:10, race:"Österreich",       loc:"Red Bull Ring, Spielberg",       flag:"🇦🇹", from:"2026-06-26", to:"2026-06-28",  rtl:false, orf:true},
-    {rnd:11, race:"Großbritannien",   loc:"Silverstone Circuit",            flag:"🇬🇧", from:"2026-07-03", to:"2026-07-05",  rtl:true,  orf:true},
-    {rnd:12, race:"Belgien",          loc:"Circuit de Spa-Francorchamps",   flag:"🇧🇪", from:"2026-07-17", to:"2026-07-19",  rtl:true,  orf:true},
-    {rnd:13, race:"Ungarn",           loc:"Hungaroring, Budapest",          flag:"🇭🇺", from:"2026-07-24", to:"2026-07-26",  rtl:false, orf:false},
-    {rnd:14, race:"Niederlande",      loc:"Circuit Zandvoort",              flag:"🇳🇱", from:"2026-08-21", to:"2026-08-23",  rtl:true,  orf:true},
-    {rnd:15, race:"Italien",          loc:"Autodromo Nazionale Monza",      flag:"🇮🇹", from:"2026-09-04", to:"2026-09-06",  rtl:true,  orf:true},
-    {rnd:16, race:"Madrid",           loc:"Circuito de Madrid",             flag:"🇪🇸", from:"2026-09-11", to:"2026-09-13",  rtl:false, orf:false},
-    {rnd:17, race:"Aserbaidschan",    loc:"Baku City Circuit",              flag:"🇦🇿", from:"2026-09-25", to:"2026-09-27",  rtl:false, orf:false},
-    {rnd:18, race:"Singapur",         loc:"Marina Bay Street Circuit",      flag:"🇸🇬", from:"2026-10-09", to:"2026-10-11",  rtl:false, orf:false},
-    {rnd:19, race:"USA",              loc:"Circuit of the Americas, Austin", flag:"🇺🇸", from:"2026-10-23", to:"2026-10-25",  rtl:false, orf:false},
-    {rnd:20, race:"Mexiko",           loc:"Autodromo Hermanos Rodriguez",   flag:"🇲🇽", from:"2026-10-30", to:"2026-11-01",  rtl:false, orf:false},
-    {rnd:21, race:"Brasilien",        loc:"Autodromo Jose Carlos Pace",     flag:"🇧🇷", from:"2026-11-06", to:"2026-11-08",  rtl:true,  orf:false},
-    {rnd:22, race:"Las Vegas",        loc:"Las Vegas Strip Circuit",        flag:"🇺🇸", from:"2026-11-19", to:"2026-11-21",  rtl:false, orf:false},
-    {rnd:23, race:"Katar",            loc:"Losail International Circuit",   flag:"🇶🇦", from:"2026-11-27", to:"2026-11-29",  rtl:false, orf:false},
-    {rnd:24, race:"Abu Dhabi",        loc:"Yas Marina Circuit",             flag:"🇦🇪", from:"2026-12-04", to:"2026-12-06",  rtl:false, orf:false},
+    {rnd:1,  race:"Australien",     loc:"Albert Park, Melbourne",          flag:"🇦🇺", rtl:false, orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-03-06T04:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-03-06T08:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-03-07T04:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-03-07T08:00:00"), rtl:false, orf:false},
+      {type:"Rennen",    dt:ldt("2026-03-08T06:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:2,  race:"China",          loc:"Shanghai International Circuit",  flag:"🇨🇳", rtl:false, orf:false, sessions:[
+      {type:"FP1",            dt:ldt("2026-03-13T04:30:00"), rtl:false, orf:false},
+      {type:"Sprintqualifying",dt:ldt("2026-03-13T08:30:00"), rtl:false, orf:false},
+      {type:"Sprint",         dt:ldt("2026-03-14T05:00:00"), rtl:false, orf:false},
+      {type:"Qualifying",     dt:ldt("2026-03-14T09:00:00"), rtl:false, orf:false},
+      {type:"Rennen",         dt:ldt("2026-03-15T07:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:3,  race:"Japan",          loc:"Suzuka Circuit",                  flag:"🇯🇵", rtl:false, orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-03-27T04:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-03-27T08:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-03-28T05:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-03-28T09:00:00"), rtl:false, orf:false},
+      {type:"Rennen",    dt:ldt("2026-03-29T07:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:4,  race:"Bahrain",        loc:"Bahrain International Circuit",   flag:"🇧🇭", rtl:false, orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-04-10T13:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-04-10T17:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-04-11T13:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-04-11T17:00:00"), rtl:false, orf:false},
+      {type:"Rennen",    dt:ldt("2026-04-12T17:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:5,  race:"Saudi-Arabien",  loc:"Jeddah Corniche Circuit",         flag:"🇸🇦", rtl:false, orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-04-17T16:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-04-17T20:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-04-18T16:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-04-18T20:00:00"), rtl:false, orf:false},
+      {type:"Rennen",    dt:ldt("2026-04-19T19:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:6,  race:"Miami",          loc:"Miami International Autodrome",   flag:"🇺🇸", rtl:false, orf:false, sessions:[
+      {type:"FP1",            dt:ldt("2026-05-01T19:30:00"), rtl:false, orf:false},
+      {type:"Sprintqualifying",dt:ldt("2026-05-01T23:30:00"), rtl:false, orf:false},
+      {type:"Sprint",         dt:ldt("2026-05-02T20:00:00"), rtl:false, orf:false},
+      {type:"Qualifying",     dt:ldt("2026-05-02T23:00:00"), rtl:false, orf:false},
+      {type:"Rennen",         dt:ldt("2026-05-03T22:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:7,  race:"Kanada",         loc:"Circuit Gilles Villeneuve",       flag:"🇨🇦", rtl:false, orf:false, sessions:[
+      {type:"FP1",            dt:ldt("2026-05-22T19:30:00"), rtl:false, orf:false},
+      {type:"Sprintqualifying",dt:ldt("2026-05-22T23:30:00"), rtl:false, orf:false},
+      {type:"Sprint",         dt:ldt("2026-05-23T19:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",     dt:ldt("2026-05-23T23:00:00"), rtl:false, orf:false},
+      {type:"Rennen",         dt:ldt("2026-05-24T20:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:8,  race:"Monaco",         loc:"Circuit de Monaco",               flag:"🇲🇨", rtl:true,  orf:true,  sessions:[
+      {type:"FP1",       dt:ldt("2026-06-05T14:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-06-05T18:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-06-06T13:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-06-06T17:00:00"), rtl:true,  orf:true},
+      {type:"Rennen",    dt:ldt("2026-06-07T15:00:00"), rtl:true,  orf:true},
+    ]},
+    {rnd:9,  race:"Spanien",        loc:"Circuit de Barcelona-Catalunya",  flag:"🇪🇸", rtl:true,  orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-06-12T14:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-06-12T18:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-06-13T13:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-06-13T17:00:00"), rtl:true,  orf:false},
+      {type:"Rennen",    dt:ldt("2026-06-14T15:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:10, race:"Österreich",     loc:"Red Bull Ring, Spielberg",        flag:"🇦🇹", rtl:false, orf:true,  sessions:[
+      {type:"FP1",       dt:ldt("2026-06-26T13:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-06-26T17:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-06-27T12:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-06-27T16:00:00"), rtl:false, orf:true},
+      {type:"Rennen",    dt:ldt("2026-06-28T15:00:00"), rtl:false, orf:true},
+    ]},
+    {rnd:11, race:"Großbritannien", loc:"Silverstone Circuit",             flag:"🇬🇧", rtl:true,  orf:true,  sessions:[
+      {type:"FP1",            dt:ldt("2026-07-03T14:30:00"), rtl:false, orf:false},
+      {type:"Sprintqualifying",dt:ldt("2026-07-03T18:30:00"), rtl:false, orf:false},
+      {type:"Sprint",         dt:ldt("2026-07-04T12:00:00"), rtl:false, orf:false},
+      {type:"Qualifying",     dt:ldt("2026-07-04T16:00:00"), rtl:false, orf:true},
+      {type:"Rennen",         dt:ldt("2026-07-05T16:00:00"), rtl:true,  orf:true},
+    ]},
+    {rnd:12, race:"Belgien",        loc:"Circuit de Spa-Francorchamps",    flag:"🇧🇪", rtl:true,  orf:true,  sessions:[
+      {type:"FP1",       dt:ldt("2026-07-17T14:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-07-17T18:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-07-18T13:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-07-18T17:00:00"), rtl:false, orf:true},
+      {type:"Rennen",    dt:ldt("2026-07-19T15:00:00"), rtl:true,  orf:true},
+    ]},
+    {rnd:13, race:"Ungarn",         loc:"Hungaroring, Budapest",           flag:"🇭🇺", rtl:false, orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-07-24T14:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-07-24T18:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-07-25T13:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-07-25T17:00:00"), rtl:false, orf:false},
+      {type:"Rennen",    dt:ldt("2026-07-26T15:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:14, race:"Niederlande",    loc:"Circuit Zandvoort",               flag:"🇳🇱", rtl:true,  orf:true,  sessions:[
+      {type:"FP1",            dt:ldt("2026-08-21T13:30:00"), rtl:false, orf:false},
+      {type:"Sprintqualifying",dt:ldt("2026-08-21T17:30:00"), rtl:false, orf:false},
+      {type:"Sprint",         dt:ldt("2026-08-22T12:00:00"), rtl:false, orf:false},
+      {type:"Qualifying",     dt:ldt("2026-08-22T16:00:00"), rtl:false, orf:true},
+      {type:"Rennen",         dt:ldt("2026-08-23T15:00:00"), rtl:true,  orf:true},
+    ]},
+    {rnd:15, race:"Italien",        loc:"Autodromo Nazionale Monza",       flag:"🇮🇹", rtl:true,  orf:true,  sessions:[
+      {type:"FP1",       dt:ldt("2026-09-04T14:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-09-04T18:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-09-05T13:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-09-05T17:00:00"), rtl:false, orf:true},
+      {type:"Rennen",    dt:ldt("2026-09-06T15:00:00"), rtl:true,  orf:true},
+    ]},
+    {rnd:16, race:"Madrid",         loc:"Circuito de Madrid",              flag:"🇪🇸", rtl:false, orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-09-11T14:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-09-11T18:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-09-12T13:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-09-12T17:00:00"), rtl:false, orf:false},
+      {type:"Rennen",    dt:ldt("2026-09-13T15:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:17, race:"Aserbaidschan",  loc:"Baku City Circuit",               flag:"🇦🇿", rtl:false, orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-09-25T11:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-09-25T15:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-09-26T11:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-09-26T15:00:00"), rtl:false, orf:false},
+      {type:"Rennen",    dt:ldt("2026-09-27T13:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:18, race:"Singapur",       loc:"Marina Bay Street Circuit",       flag:"🇸🇬", rtl:false, orf:false, sessions:[
+      {type:"FP1",            dt:ldt("2026-10-09T11:30:00"), rtl:false, orf:false},
+      {type:"Sprintqualifying",dt:ldt("2026-10-09T15:30:00"), rtl:false, orf:false},
+      {type:"Sprint",         dt:ldt("2026-10-10T12:00:00"), rtl:false, orf:false},
+      {type:"Qualifying",     dt:ldt("2026-10-10T15:30:00"), rtl:false, orf:false},
+      {type:"Rennen",         dt:ldt("2026-10-11T14:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:19, race:"USA",            loc:"Circuit of the Americas, Austin", flag:"🇺🇸", rtl:false, orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-10-23T20:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-10-24T00:30:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-10-24T20:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-10-25T00:00:00"), rtl:false, orf:false},
+      {type:"Rennen",    dt:ldt("2026-10-25T21:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:20, race:"Mexiko",         loc:"Autodromo Hermanos Rodriguez",    flag:"🇲🇽", rtl:false, orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-10-30T20:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-10-31T00:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-10-31T20:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-11-01T00:00:00"), rtl:false, orf:false},
+      {type:"Rennen",    dt:ldt("2026-11-01T21:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:21, race:"Brasilien",      loc:"Autodromo Jose Carlos Pace",      flag:"🇧🇷", rtl:true,  orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-11-06T16:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-11-06T20:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-11-07T16:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-11-07T20:00:00"), rtl:false, orf:false},
+      {type:"Rennen",    dt:ldt("2026-11-08T18:00:00"), rtl:true,  orf:false},
+    ]},
+    {rnd:22, race:"Las Vegas",      loc:"Las Vegas Strip Circuit",         flag:"🇺🇸", rtl:false, orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-11-20T04:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-11-20T08:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-11-21T04:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-11-21T08:00:00"), rtl:false, orf:false},
+      {type:"Rennen",    dt:ldt("2026-11-22T07:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:23, race:"Katar",          loc:"Losail International Circuit",    flag:"🇶🇦", rtl:false, orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-11-27T13:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-11-27T17:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-11-28T12:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-11-28T16:00:00"), rtl:false, orf:false},
+      {type:"Rennen",    dt:ldt("2026-11-29T15:00:00"), rtl:false, orf:false},
+    ]},
+    {rnd:24, race:"Abu Dhabi",      loc:"Yas Marina Circuit",              flag:"🇦🇪", rtl:false, orf:false, sessions:[
+      {type:"FP1",       dt:ldt("2026-12-04T11:30:00"), rtl:false, orf:false},
+      {type:"FP2",       dt:ldt("2026-12-04T15:00:00"), rtl:false, orf:false},
+      {type:"FP3",       dt:ldt("2026-12-05T12:30:00"), rtl:false, orf:false},
+      {type:"Qualifying",dt:ldt("2026-12-05T16:00:00"), rtl:false, orf:false},
+      {type:"Rennen",    dt:ldt("2026-12-06T14:00:00"), rtl:false, orf:false},
+    ]},
   ];
+
+  function toggleRace(idx){
+    const el = document.getElementById('race-'+idx);
+    el.classList.toggle('open');
+  }
 
   function renderSeason(){
     const now = new Date();
     const el  = document.getElementById('season-content');
-    el.innerHTML = FULL_CAL.map(r => {
-      const start = new Date(r.from);
-      const end   = new Date(r.to + 'T23:59:59');
-      const past  = now > end;
-      const curr  = now >= start && now <= end;
-      const chan  = buildChan(r.rtl, r.orf);
-      const d1    = start.getDate()+'. '+MONTHS_DE[start.getMonth()];
-      const d2    = end.getDate()+'. '+MONTHS_DE[end.getMonth()];
-      const dateStr = start.getMonth()===end.getMonth()
-        ? start.getDate()+'–'+end.getDate()+'. '+MONTHS_DE[end.getMonth()]
+    let autoOpen = -1;
+
+    el.innerHTML = FULL_CAL.map((r, idx) => {
+      const allDates  = r.sessions.map(s => s.dt);
+      const start     = new Date(Math.min(...allDates));
+      const lastDate  = new Date(Math.max(...allDates));
+      const end       = new Date(lastDate.getTime() + 3*60*60*1000);
+      const past      = now > end;
+      const curr      = now >= start && now <= end;
+      if(curr) autoOpen = idx;
+
+      const d1 = start.getDate()+'. '+MONTHS_DE[start.getMonth()];
+      const d2 = lastDate.getDate()+'. '+MONTHS_DE[lastDate.getMonth()];
+      const dateStr = start.getMonth()===lastDate.getMonth()
+        ? start.getDate()+'–'+lastDate.getDate()+'. '+MONTHS_DE[lastDate.getMonth()]
         : d1+' – '+d2;
-      return `<div class="season-item${past?' past':''}${curr?' current':''}">
-        <div class="season-flag">${r.flag}</div>
-        <div class="season-info">
-          <div class="season-name">${r.race}</div>
-          <div class="season-loc">${r.loc}</div>
-          <div class="season-chan">${chan}</div>
+
+      const sessHTML = r.sessions.map(s => {
+        const isPast = now > new Date(s.dt.getTime() + 3*60*60*1000);
+        const isLive = now >= s.dt && now < new Date(s.dt.getTime() + 3*60*60*1000);
+        const chan   = buildChan(s.rtl, s.orf);
+        return `<div class="sess-row${isPast?' past-sess':''}${isLive?' live-sess':''}">
+          ${isLive ? '<div class="sess-live-dot"></div>' : ''}
+          <div class="sess-type">${s.type}</div>
+          <div class="sess-date">${DAYS_DE[s.dt.getDay()]}. ${fmtDate(s.dt).split(', ')[1]}</div>
+          <div class="sess-time">${fmtTime(s.dt)}</div>
         </div>
-        <div class="season-right">
-          <div class="season-date">${dateStr}</div>
-          <div class="season-rnd">Rennen ${r.rnd}</div>
+        <div class="sess-row${isPast?' past-sess':''}${isLive?' live-sess':''}" style="padding-top:0;padding-bottom:10px;border-bottom:1px solid #1a1a1a">
+          <div style="width:${isLive?'8px':'0'};flex-shrink:0"></div>
+          <div class="sess-type" style="font-size:11px;color:#666;font-family:'Barlow',sans-serif;font-weight:400">${chan}</div>
+        </div>`;
+      }).join('');
+
+      return `<div class="season-item${past?' past':''}${curr?' current':''}" id="race-${idx}">
+        <div class="season-row" onclick="toggleRace(${idx})">
+          <div class="season-flag">${r.flag}</div>
+          <div class="season-info">
+            <div class="season-name">${r.race}</div>
+            <div class="season-loc">${r.loc}</div>
+          </div>
+          <div class="season-right">
+            <div class="season-date">${dateStr}</div>
+            <div class="season-rnd">Rennen ${r.rnd}</div>
+          </div>
+          <div class="season-chevron">&#9654;</div>
         </div>
+        <div class="season-sessions">${sessHTML}</div>
       </div>`;
     }).join('');
+
+    // Aktuelles Rennen automatisch aufklappen
+    if(autoOpen >= 0){
+      document.getElementById('race-'+autoOpen).classList.add('open');
+    }
   }
 
   renderSeason(); // Live-Positionen jede Minute aktualisieren
