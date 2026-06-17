@@ -1125,7 +1125,8 @@
         ? start.getDate()+'–'+lastDate.getDate()+'. '+MONTHS_DE[lastDate.getMonth()]
         : d1+' – '+d2;
 
-      const sessHTML = r.sessions.map(s => {
+      const weekendSessions = r.sessions.filter(s => !['FP1','FP2','Sprintqualifying'].includes(s.type));
+      const sessHTML = weekendSessions.map(s => {
         const isPast = now > new Date(s.dt.getTime() + 3*60*60*1000);
         const isLive = now >= s.dt && now < new Date(s.dt.getTime() + 3*60*60*1000);
         const chan   = buildChan(s.rtl, s.orf);
