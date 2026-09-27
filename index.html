@@ -487,16 +487,28 @@
   }
 
   // ── Free-TV zusätzlich zu Sky (pro Strecke = circuitId der API) ───────
-  // Neue/unbekannte Strecken laufen automatisch mit "Sky Sport F1".
+  // Quellen (Stand Sept. 2026): RTL-Fahrplan laut motorsport-total.com,
+  // ORF-Fahrplan laut der.orf.at. Unbekannte Strecken → nur "Sky Sport F1".
+  const R = {rtl:true}, O = {orf:true}, RO = {rtl:true, orf:true};
   const FREE_TV = {
-    'monaco':        {Qualifying:{rtl:true, orf:true}, Rennen:{rtl:true, orf:true}},
-    'catalunya':     {Qualifying:{rtl:true}},
-    'red_bull_ring': {Qualifying:{orf:true},           Rennen:{orf:true}},
-    'silverstone':   {Qualifying:{orf:true},           Rennen:{rtl:true, orf:true}},
-    'spa':           {Qualifying:{orf:true},           Rennen:{rtl:true, orf:true}},
-    'zandvoort':     {Qualifying:{orf:true},           Rennen:{rtl:true, orf:true}},
-    'monza':         {Qualifying:{orf:true},           Rennen:{rtl:true, orf:true}},
-    'interlagos':    {Rennen:{rtl:true}},
+    // RTL: 5 komplette Wochenenden (Quali + Rennen) + 5 einzelne Samstage
+    'monaco':      {Qualifying:RO, Rennen:RO},
+    'spa':         {Qualifying:R,  Rennen:R},
+    'zandvoort':   {Qualifying:R,  Rennen:R},
+    'madring':     {Qualifying:RO, Rennen:RO},
+    'vegas':       {Qualifying:RO, Rennen:RO},
+    'silverstone': {Sprint:RO, Qualifying:O, Rennen:O},
+    'hungaroring': {Qualifying:RO, Rennen:O},
+    'monza':       {Qualifying:R},
+    'marina_bay':  {Sprint:RO, Qualifying:O, Rennen:O},
+    'americas':    {Qualifying:R},
+    // ORF 1: 12 Rennen live
+    'shanghai':    {Sprint:O, Qualifying:O, Rennen:O},
+    'bahrain':     {Qualifying:O, Rennen:O},
+    'miami':       {Sprint:O, Qualifying:O, Rennen:O},
+    'catalunya':   {Qualifying:O, Rennen:O},
+    'rodriguez':   {Qualifying:O, Rennen:O},
+    'yas_marina':  {Qualifying:O, Rennen:O},
   };
 
   function buildChan(rtl, orf){
