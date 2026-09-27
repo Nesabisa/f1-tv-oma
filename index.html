@@ -444,8 +444,10 @@
   const MONTHS_DE = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
   const openRaces = new Set(); // welche Rennen im Kalender aufgeklappt sind
   let autoOpened = false;
-  // Freitags-Sessions, die Oma nicht braucht (weder im Kalender noch bei Jetzt/Als Nächstes)
+  // Im Kalender ausgeblendet (Freitag)
   const HIDDEN_SESSIONS = ['FP1','FP2','Sprintqualifying'];
+  // Oben bei "Jetzt im Fernsehen" / "Als Nächstes" nur das Wichtige
+  const TOP_SESSIONS = ['Qualifying','Sprint','Rennen'];
 
   // ── Hilfsfunktionen ───────────────────────────────────────────────────
   function fmtDate(d){
@@ -599,7 +601,7 @@
 
     for(const gp of activeCal){
       for(const s of gp.sessions){
-        if(HIDDEN_SESSIONS.includes(s.type)) continue;
+        if(!TOP_SESSIONS.includes(s.type)) continue;
         const end = new Date(s.start.getTime() + s.dur * 60000);
         if(now >= s.start && now < end){
           liveItem = s; liveGp = gp;
