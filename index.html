@@ -425,7 +425,7 @@
   </div>
 
   <div class="sec" style="padding-bottom: 16px;">
-    <div class="sec-label">&#128197; Rennen 2026</div>
+    <div class="sec-label">&#128197; Rennen <span class="season-year">2026</span></div>
     <div id="season-content"></div>
   </div>
 
@@ -435,7 +435,7 @@
   </div>
 
   <div class="update-time" id="update-time"></div>
-  <div class="footer">Scuderia Ferrari &middot; Formel 1 2026</div>
+  <div class="footer">Scuderia Ferrari &middot; Formel 1 <span class="season-year">2026</span></div>
 
 </div>
 
@@ -462,52 +462,41 @@
     return 'in '+m+' Minute'+(m===1?'':'n');
   }
 
-  // ── Rennstrecken (OpenF1 "location") → Anzeige ───────────────────────
-  const TRACKS = {
-    'Melbourne':         {race:'Australien',     loc:'Albert Park, Melbourne',          flag:'🇦🇺'},
-    'Shanghai':          {race:'China',          loc:'Shanghai International Circuit',  flag:'🇨🇳'},
-    'Suzuka':            {race:'Japan',          loc:'Suzuka Circuit',                  flag:'🇯🇵'},
-    'Sakhir':            {race:'Bahrain',        loc:'Bahrain International Circuit',   flag:'🇧🇭'},
-    'Jeddah':            {race:'Saudi-Arabien',  loc:'Jeddah Corniche Circuit',         flag:'🇸🇦'},
-    'Miami Gardens':     {race:'Miami',          loc:'Miami International Autodrome',   flag:'🇺🇸'},
-    'Montréal':          {race:'Kanada',         loc:'Circuit Gilles Villeneuve',       flag:'🇨🇦'},
-    'Monte Carlo':       {race:'Monaco',         loc:'Circuit de Monaco',               flag:'🇲🇨'},
-    'Barcelona':         {race:'Spanien',        loc:'Circuit de Barcelona-Catalunya',  flag:'🇪🇸'},
-    'Spielberg':         {race:'Österreich',     loc:'Red Bull Ring, Spielberg',        flag:'🇦🇹'},
-    'Silverstone':       {race:'Großbritannien', loc:'Silverstone Circuit',             flag:'🇬🇧'},
-    'Spa-Francorchamps': {race:'Belgien',        loc:'Circuit de Spa-Francorchamps',    flag:'🇧🇪'},
-    'Budapest':          {race:'Ungarn',         loc:'Hungaroring, Budapest',           flag:'🇭🇺'},
-    'Zandvoort':         {race:'Niederlande',    loc:'Circuit Zandvoort',               flag:'🇳🇱'},
-    'Monza':             {race:'Italien',        loc:'Autodromo Nazionale Monza',       flag:'🇮🇹'},
-    'Madrid':            {race:'Madrid',         loc:'Circuito de Madrid',              flag:'🇪🇸'},
-    'Baku':              {race:'Aserbaidschan',  loc:'Baku City Circuit',               flag:'🇦🇿'},
-    'Kuala Lumpur':      {race:'Malaysia',       loc:'Sepang, Kuala Lumpur',            flag:'🇲🇾'},
-    'Marina Bay':        {race:'Singapur',       loc:'Marina Bay Street Circuit',       flag:'🇸🇬'},
-    'Austin':            {race:'USA',            loc:'Circuit of the Americas, Austin', flag:'🇺🇸'},
-    'Mexico City':       {race:'Mexiko',         loc:'Autodromo Hermanos Rodriguez',    flag:'🇲🇽'},
-    'São Paulo':         {race:'Brasilien',      loc:'Autodromo Jose Carlos Pace',      flag:'🇧🇷'},
-    'Las Vegas':         {race:'Las Vegas',      loc:'Las Vegas Strip Circuit',         flag:'🇺🇸'},
-    'Lusail':            {race:'Katar',          loc:'Losail International Circuit',    flag:'🇶🇦'},
-    'Yas Marina':        {race:'Abu Dhabi',      loc:'Yas Marina Circuit',              flag:'🇦🇪'},
+  // ── Länder (englisch, wie die API sie liefert) → Ländercode für Flagge & deutschen Namen ─
+  const COUNTRY_ISO = {
+    'Australia':'AU', 'China':'CN', 'Japan':'JP', 'Bahrain':'BH', 'Saudi Arabia':'SA',
+    'USA':'US', 'United States':'US', 'Canada':'CA', 'Monaco':'MC', 'Spain':'ES',
+    'Austria':'AT', 'UK':'GB', 'United Kingdom':'GB', 'Great Britain':'GB', 'Belgium':'BE',
+    'Hungary':'HU', 'Netherlands':'NL', 'Italy':'IT', 'Azerbaijan':'AZ', 'Malaysia':'MY',
+    'Singapore':'SG', 'Mexico':'MX', 'Brazil':'BR', 'Qatar':'QA', 'UAE':'AE',
+    'United Arab Emirates':'AE', 'France':'FR', 'Germany':'DE', 'Portugal':'PT',
+    'Turkey':'TR', 'Russia':'RU', 'Vietnam':'VN', 'South Africa':'ZA', 'Argentina':'AR',
+    'Korea':'KR', 'South Korea':'KR', 'India':'IN', 'Thailand':'TH', 'Rwanda':'RW',
+    'Morocco':'MA', 'Switzerland':'CH', 'Sweden':'SE', 'Indonesia':'ID',
   };
+  const REGION_DE = (() => { try { return new Intl.DisplayNames(['de'], {type:'region'}); } catch(_){ return null; } })();
 
-  // ── API-Sessionname → Deutsch ─────────────────────────────────────────
-  const SESSION_DE = {
-    'Practice 1':'FP1', 'Practice 2':'FP2', 'Practice 3':'FP3',
-    'Qualifying':'Qualifying', 'Race':'Rennen',
-    'Sprint':'Sprint', 'Sprint Qualifying':'Sprintqualifying',
-  };
+  function flagOf(iso){
+    return iso ? String.fromCodePoint(...[...iso].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) : '🏁';
+  }
+  function countryDE(country){
+    const iso = COUNTRY_ISO[country];
+    const SHORT = {US:'USA', GB:'Großbritannien', AE:'Abu Dhabi'};
+    if(SHORT[iso]) return SHORT[iso];
+    try { return (iso && REGION_DE && REGION_DE.of(iso)) || country; } catch(_){ return country; }
+  }
 
-  // ── Free-TV zusätzlich zu Sky (pro Strecke und Session) ───────────────
+  // ── Free-TV zusätzlich zu Sky (pro Strecke = circuitId der API) ───────
+  // Neue/unbekannte Strecken laufen automatisch mit "Sky Sport F1".
   const FREE_TV = {
-    'Monte Carlo':       {Qualifying:{rtl:true, orf:true}, Rennen:{rtl:true, orf:true}},
-    'Barcelona':         {Qualifying:{rtl:true}},
-    'Spielberg':         {Qualifying:{orf:true},           Rennen:{orf:true}},
-    'Silverstone':       {Qualifying:{orf:true},           Rennen:{rtl:true, orf:true}},
-    'Spa-Francorchamps': {Qualifying:{orf:true},           Rennen:{rtl:true, orf:true}},
-    'Zandvoort':         {Qualifying:{orf:true},           Rennen:{rtl:true, orf:true}},
-    'Monza':             {Qualifying:{orf:true},           Rennen:{rtl:true, orf:true}},
-    'São Paulo':         {Rennen:{rtl:true}},
+    'monaco':        {Qualifying:{rtl:true, orf:true}, Rennen:{rtl:true, orf:true}},
+    'catalunya':     {Qualifying:{rtl:true}},
+    'red_bull_ring': {Qualifying:{orf:true},           Rennen:{orf:true}},
+    'silverstone':   {Qualifying:{orf:true},           Rennen:{rtl:true, orf:true}},
+    'spa':           {Qualifying:{orf:true},           Rennen:{rtl:true, orf:true}},
+    'zandvoort':     {Qualifying:{orf:true},           Rennen:{rtl:true, orf:true}},
+    'monza':         {Qualifying:{orf:true},           Rennen:{rtl:true, orf:true}},
+    'interlagos':    {Rennen:{rtl:true}},
   };
 
   function buildChan(rtl, orf){
@@ -517,68 +506,75 @@
     return parts.join(' · ');
   }
 
-  function makeSession(location, type, start, dur){
-    const tv = (FREE_TV[location] || {})[type] || {};
-    return {type, start, dur, rtl: !!tv.rtl, orf: !!tv.orf};
-  }
-
-  // Liste von Wochenenden → mit Rundennummer, Name, Flagge
-  function buildCalendar(meetings){
-    return meetings
-      .filter(m => TRACKS[m.location] && m.sessions.length)
-      .map(m => { m.sessions.sort((a,b) => a.start - b.start); return m; })
-      .sort((a,b) => a.sessions[0].start - b.sessions[0].start)
-      .map((m, i) => ({rnd: i+1, ...TRACKS[m.location], sessions: m.sessions}));
-  }
-
-  // ── API-Daten → internes Format (abgesagte Rennen & Tests fliegen raus) ─
-  function apiToCalendar(sessions){
-    const meetings = {};
-    for(const s of sessions){
-      const type = SESSION_DE[s.session_name];
-      if(!type || s.is_cancelled) continue;
-      const k = s.meeting_key;
-      if(!meetings[k]) meetings[k] = {location: s.location, sessions: []};
-      const start = new Date(s.date_start);
-      const dur   = Math.round((new Date(s.date_end) - start) / 60000) || 60;
-      meetings[k].sessions.push(makeSession(s.location, type, start, dur));
-    }
-    return buildCalendar(Object.values(meetings));
-  }
-
-  // ── Fallback-Kalender, falls kein Internet (Zeiten in UTC, Stand 27.09.2026) ─
-  const FALLBACK_RAW = [
-    ["Melbourne", [["FP1","2026-03-06T01:30Z",60],["FP2","2026-03-06T05:00Z",60],["FP3","2026-03-07T01:30Z",60],["Qualifying","2026-03-07T05:00Z",60],["Rennen","2026-03-08T04:00Z",120]]],
-    ["Shanghai", [["FP1","2026-03-13T03:30Z",60],["Sprintqualifying","2026-03-13T07:30Z",44],["Sprint","2026-03-14T03:00Z",60],["Qualifying","2026-03-14T07:00Z",60],["Rennen","2026-03-15T07:00Z",120]]],
-    ["Suzuka", [["FP1","2026-03-27T02:30Z",60],["FP2","2026-03-27T06:00Z",60],["FP3","2026-03-28T02:30Z",60],["Qualifying","2026-03-28T06:00Z",60],["Rennen","2026-03-29T05:00Z",120]]],
-    ["Miami Gardens", [["FP1","2026-05-01T16:00Z",90],["Sprintqualifying","2026-05-01T20:30Z",44],["Sprint","2026-05-02T16:00Z",60],["Qualifying","2026-05-02T20:00Z",60],["Rennen","2026-05-03T17:00Z",120]]],
-    ["Montréal", [["FP1","2026-05-22T16:30Z",60],["Sprintqualifying","2026-05-22T20:30Z",44],["Sprint","2026-05-23T16:00Z",60],["Qualifying","2026-05-23T20:00Z",60],["Rennen","2026-05-24T20:00Z",120]]],
-    ["Monte Carlo", [["FP1","2026-06-05T11:30Z",60],["FP2","2026-06-05T15:00Z",60],["FP3","2026-06-06T10:30Z",60],["Qualifying","2026-06-06T14:00Z",60],["Rennen","2026-06-07T13:00Z",120]]],
-    ["Barcelona", [["FP1","2026-06-12T11:30Z",60],["FP2","2026-06-12T15:00Z",60],["FP3","2026-06-13T10:30Z",60],["Qualifying","2026-06-13T14:00Z",60],["Rennen","2026-06-14T13:00Z",120]]],
-    ["Spielberg", [["FP1","2026-06-26T11:30Z",60],["FP2","2026-06-26T15:00Z",60],["FP3","2026-06-27T10:30Z",60],["Qualifying","2026-06-27T14:00Z",60],["Rennen","2026-06-28T13:00Z",120]]],
-    ["Silverstone", [["FP1","2026-07-03T11:30Z",60],["Sprintqualifying","2026-07-03T15:30Z",44],["Sprint","2026-07-04T11:00Z",60],["Qualifying","2026-07-04T15:00Z",60],["Rennen","2026-07-05T14:00Z",120]]],
-    ["Spa-Francorchamps", [["FP1","2026-07-17T11:30Z",60],["FP2","2026-07-17T15:00Z",60],["FP3","2026-07-18T10:30Z",60],["Qualifying","2026-07-18T14:00Z",60],["Rennen","2026-07-19T13:00Z",120]]],
-    ["Budapest", [["FP1","2026-07-24T11:30Z",60],["FP2","2026-07-24T15:00Z",60],["FP3","2026-07-25T10:30Z",60],["Qualifying","2026-07-25T14:00Z",60],["Rennen","2026-07-26T13:00Z",120]]],
-    ["Zandvoort", [["FP1","2026-08-21T10:30Z",60],["Sprintqualifying","2026-08-21T14:30Z",44],["Sprint","2026-08-22T10:00Z",60],["Qualifying","2026-08-22T14:00Z",60],["Rennen","2026-08-23T13:00Z",120]]],
-    ["Monza", [["FP1","2026-09-04T10:30Z",60],["FP2","2026-09-04T14:00Z",60],["FP3","2026-09-05T10:30Z",60],["Qualifying","2026-09-05T14:00Z",60],["Rennen","2026-09-06T13:00Z",120]]],
-    ["Madrid", [["FP1","2026-09-11T11:30Z",60],["FP2","2026-09-11T15:00Z",60],["FP3","2026-09-12T10:30Z",60],["Qualifying","2026-09-12T14:00Z",60],["Rennen","2026-09-13T13:00Z",120]]],
-    ["Baku", [["FP1","2026-09-24T08:30Z",60],["FP2","2026-09-24T12:00Z",60],["FP3","2026-09-25T08:30Z",60],["Qualifying","2026-09-25T12:00Z",60],["Rennen","2026-09-26T11:00Z",120]]],
-    ["Kuala Lumpur", [["FP1","2026-10-02T04:30Z",60],["FP2","2026-10-02T08:00Z",60],["FP3","2026-10-03T04:30Z",60],["Qualifying","2026-10-03T08:00Z",60],["Rennen","2026-10-04T07:00Z",120]]],
-    ["Marina Bay", [["FP1","2026-10-09T08:30Z",60],["Sprintqualifying","2026-10-09T12:30Z",44],["Sprint","2026-10-10T09:00Z",60],["Qualifying","2026-10-10T13:00Z",60],["Rennen","2026-10-11T12:00Z",120]]],
-    ["Austin", [["FP1","2026-10-23T17:30Z",60],["FP2","2026-10-23T21:00Z",60],["FP3","2026-10-24T17:30Z",60],["Qualifying","2026-10-24T21:00Z",60],["Rennen","2026-10-25T20:00Z",120]]],
-    ["Mexico City", [["FP1","2026-10-30T18:30Z",60],["FP2","2026-10-30T22:00Z",60],["FP3","2026-10-31T17:30Z",60],["Qualifying","2026-10-31T21:00Z",60],["Rennen","2026-11-01T20:00Z",120]]],
-    ["São Paulo", [["FP1","2026-11-06T15:30Z",60],["FP2","2026-11-06T19:00Z",60],["FP3","2026-11-07T14:30Z",60],["Qualifying","2026-11-07T18:00Z",60],["Rennen","2026-11-08T17:00Z",120]]],
-    ["Las Vegas", [["FP1","2026-11-20T00:30Z",60],["FP2","2026-11-20T04:00Z",60],["FP3","2026-11-21T00:30Z",60],["Qualifying","2026-11-21T04:00Z",60],["Rennen","2026-11-22T04:00Z",120]]],
-    ["Lusail", [["FP1","2026-11-27T13:30Z",60],["FP2","2026-11-27T17:00Z",60],["FP3","2026-11-28T14:30Z",60],["Qualifying","2026-11-28T18:00Z",60],["Rennen","2026-11-29T16:00Z",120]]],
-    ["Yas Marina", [["FP1","2026-12-04T09:30Z",60],["FP2","2026-12-04T13:00Z",60],["FP3","2026-12-05T10:30Z",60],["Qualifying","2026-12-05T14:00Z",60],["Rennen","2026-12-06T13:00Z",120]]],
+  // ── API-Session → Deutsch + ungefähre Dauer in Minuten ────────────────
+  const SESSIONS = [
+    ['FirstPractice',    'FP1',              60],
+    ['SecondPractice',   'FP2',              60],
+    ['ThirdPractice',    'FP3',              60],
+    ['SprintQualifying', 'Sprintqualifying', 45],
+    ['Sprint',           'Sprint',           60],
+    ['Qualifying',       'Qualifying',       60],
   ];
-  const FALLBACK_CAL = buildCalendar(FALLBACK_RAW.map(([location, sess]) => ({
-    location,
-    sessions: sess.map(([type, iso, dur]) => makeSession(location, type, new Date(iso), dur)),
-  })));
+
+  // ── Rennkalender der API → internes Format (alles automatisch) ────────
+  function apiToCalendar(races){
+    // Gibt es mehrere Rennen im selben Land (z. B. USA, Spanien), nimm den Ort als Namen
+    const perCountry = {};
+    for(const r of races){ const c = r.Circuit.Location.country; perCountry[c] = (perCountry[c]||0) + 1; }
+
+    return races.map(r => {
+      const L  = r.Circuit.Location;
+      const id = r.Circuit.circuitId;
+      const tv = FREE_TV[id] || {};
+      const mk = (type, date, time, dur) => {
+        const t = tv[type] || {};
+        return {type, start: new Date(date+'T'+(time||'12:00:00Z')), dur, rtl: !!t.rtl, orf: !!t.orf};
+      };
+      const sessions = SESSIONS.filter(([k]) => r[k]).map(([k, type, dur]) => mk(type, r[k].date, r[k].time, dur));
+      sessions.push(mk('Rennen', r.date, r.time, 120));
+      sessions.sort((a,b) => a.start - b.start);
+      return {
+        rnd:  +r.round,
+        race: perCountry[L.country] > 1 ? L.locality : countryDE(L.country),
+        loc:  r.Circuit.circuitName + (r.Circuit.circuitName.includes(L.locality) ? '' : ', ' + L.locality),
+        flag: flagOf(COUNTRY_ISO[L.country]),
+        sessions,
+      };
+    });
+  }
+
+  // ── Fallback-Kalender, falls kein Internet (Stand 27.09.2026) ─────────
+  const FALLBACK_RAW = [
+    {"round":"1","date":"2026-03-08","time":"04:00:00Z","Circuit":{"circuitId":"albert_park","circuitName":"Albert Park Grand Prix Circuit","Location":{"locality":"Melbourne","country":"Australia"}},"FirstPractice":{"date":"2026-03-06","time":"01:30:00Z"},"SecondPractice":{"date":"2026-03-06","time":"05:00:00Z"},"ThirdPractice":{"date":"2026-03-07","time":"01:30:00Z"},"Qualifying":{"date":"2026-03-07","time":"05:00:00Z"}},
+    {"round":"2","date":"2026-03-15","time":"07:00:00Z","Circuit":{"circuitId":"shanghai","circuitName":"Shanghai International Circuit","Location":{"locality":"Shanghai","country":"China"}},"FirstPractice":{"date":"2026-03-13","time":"03:30:00Z"},"SprintQualifying":{"date":"2026-03-13","time":"07:30:00Z"},"Sprint":{"date":"2026-03-14","time":"03:00:00Z"},"Qualifying":{"date":"2026-03-14","time":"07:00:00Z"}},
+    {"round":"3","date":"2026-03-29","time":"05:00:00Z","Circuit":{"circuitId":"suzuka","circuitName":"Suzuka Circuit","Location":{"locality":"Suzuka","country":"Japan"}},"FirstPractice":{"date":"2026-03-27","time":"02:30:00Z"},"SecondPractice":{"date":"2026-03-27","time":"06:00:00Z"},"ThirdPractice":{"date":"2026-03-28","time":"02:30:00Z"},"Qualifying":{"date":"2026-03-28","time":"06:00:00Z"}},
+    {"round":"4","date":"2026-05-03","time":"20:00:00Z","Circuit":{"circuitId":"miami","circuitName":"Miami International Autodrome","Location":{"locality":"Miami","country":"USA"}},"FirstPractice":{"date":"2026-05-01","time":"16:00:00Z"},"SprintQualifying":{"date":"2026-05-01","time":"20:30:00Z"},"Sprint":{"date":"2026-05-02","time":"16:00:00Z"},"Qualifying":{"date":"2026-05-02","time":"20:00:00Z"}},
+    {"round":"5","date":"2026-05-24","time":"20:00:00Z","Circuit":{"circuitId":"villeneuve","circuitName":"Circuit Gilles Villeneuve","Location":{"locality":"Montreal","country":"Canada"}},"FirstPractice":{"date":"2026-05-22","time":"16:30:00Z"},"SprintQualifying":{"date":"2026-05-22","time":"20:30:00Z"},"Sprint":{"date":"2026-05-23","time":"16:00:00Z"},"Qualifying":{"date":"2026-05-23","time":"20:00:00Z"}},
+    {"round":"6","date":"2026-06-07","time":"13:00:00Z","Circuit":{"circuitId":"monaco","circuitName":"Circuit de Monaco","Location":{"locality":"Monte Carlo","country":"Monaco"}},"FirstPractice":{"date":"2026-06-05","time":"11:30:00Z"},"SecondPractice":{"date":"2026-06-05","time":"15:00:00Z"},"ThirdPractice":{"date":"2026-06-06","time":"10:30:00Z"},"Qualifying":{"date":"2026-06-06","time":"14:00:00Z"}},
+    {"round":"7","date":"2026-06-14","time":"13:00:00Z","Circuit":{"circuitId":"catalunya","circuitName":"Circuit de Barcelona-Catalunya","Location":{"locality":"Barcelona","country":"Spain"}},"FirstPractice":{"date":"2026-06-12","time":"11:30:00Z"},"SecondPractice":{"date":"2026-06-12","time":"15:00:00Z"},"ThirdPractice":{"date":"2026-06-13","time":"10:30:00Z"},"Qualifying":{"date":"2026-06-13","time":"14:00:00Z"}},
+    {"round":"8","date":"2026-06-28","time":"13:00:00Z","Circuit":{"circuitId":"red_bull_ring","circuitName":"Red Bull Ring","Location":{"locality":"Spielberg","country":"Austria"}},"FirstPractice":{"date":"2026-06-26","time":"11:30:00Z"},"SecondPractice":{"date":"2026-06-26","time":"15:00:00Z"},"ThirdPractice":{"date":"2026-06-27","time":"10:30:00Z"},"Qualifying":{"date":"2026-06-27","time":"14:00:00Z"}},
+    {"round":"9","date":"2026-07-05","time":"14:00:00Z","Circuit":{"circuitId":"silverstone","circuitName":"Silverstone Circuit","Location":{"locality":"Silverstone","country":"UK"}},"FirstPractice":{"date":"2026-07-03","time":"11:30:00Z"},"SprintQualifying":{"date":"2026-07-03","time":"15:30:00Z"},"Sprint":{"date":"2026-07-04","time":"11:00:00Z"},"Qualifying":{"date":"2026-07-04","time":"15:00:00Z"}},
+    {"round":"10","date":"2026-07-19","time":"13:00:00Z","Circuit":{"circuitId":"spa","circuitName":"Circuit de Spa-Francorchamps","Location":{"locality":"Spa","country":"Belgium"}},"FirstPractice":{"date":"2026-07-17","time":"11:30:00Z"},"SecondPractice":{"date":"2026-07-17","time":"15:00:00Z"},"ThirdPractice":{"date":"2026-07-18","time":"10:30:00Z"},"Qualifying":{"date":"2026-07-18","time":"14:00:00Z"}},
+    {"round":"11","date":"2026-07-26","time":"13:00:00Z","Circuit":{"circuitId":"hungaroring","circuitName":"Hungaroring","Location":{"locality":"Budapest","country":"Hungary"}},"FirstPractice":{"date":"2026-07-24","time":"11:30:00Z"},"SecondPractice":{"date":"2026-07-24","time":"15:00:00Z"},"ThirdPractice":{"date":"2026-07-25","time":"10:30:00Z"},"Qualifying":{"date":"2026-07-25","time":"14:00:00Z"}},
+    {"round":"12","date":"2026-08-23","time":"13:00:00Z","Circuit":{"circuitId":"zandvoort","circuitName":"Circuit Park Zandvoort","Location":{"locality":"Zandvoort","country":"Netherlands"}},"FirstPractice":{"date":"2026-08-21","time":"10:30:00Z"},"SprintQualifying":{"date":"2026-08-21","time":"14:30:00Z"},"Sprint":{"date":"2026-08-22","time":"10:00:00Z"},"Qualifying":{"date":"2026-08-22","time":"14:00:00Z"}},
+    {"round":"13","date":"2026-09-06","time":"13:00:00Z","Circuit":{"circuitId":"monza","circuitName":"Autodromo Nazionale di Monza","Location":{"locality":"Monza","country":"Italy"}},"FirstPractice":{"date":"2026-09-04","time":"10:30:00Z"},"SecondPractice":{"date":"2026-09-04","time":"14:00:00Z"},"ThirdPractice":{"date":"2026-09-05","time":"10:30:00Z"},"Qualifying":{"date":"2026-09-05","time":"14:00:00Z"}},
+    {"round":"14","date":"2026-09-13","time":"13:00:00Z","Circuit":{"circuitId":"madring","circuitName":"Madring","Location":{"locality":"Madrid","country":"Spain"}},"FirstPractice":{"date":"2026-09-11","time":"11:30:00Z"},"SecondPractice":{"date":"2026-09-11","time":"15:00:00Z"},"ThirdPractice":{"date":"2026-09-12","time":"10:30:00Z"},"Qualifying":{"date":"2026-09-12","time":"14:00:00Z"}},
+    {"round":"15","date":"2026-09-26","time":"11:00:00Z","Circuit":{"circuitId":"baku","circuitName":"Baku City Circuit","Location":{"locality":"Baku","country":"Azerbaijan"}},"FirstPractice":{"date":"2026-09-24","time":"08:30:00Z"},"SecondPractice":{"date":"2026-09-24","time":"12:00:00Z"},"ThirdPractice":{"date":"2026-09-25","time":"08:30:00Z"},"Qualifying":{"date":"2026-09-25","time":"12:00:00Z"}},
+    {"round":"16","date":"2026-10-04","time":"07:00:00Z","Circuit":{"circuitId":"sepang","circuitName":"Sepang International Circuit","Location":{"locality":"Kuala Lumpur","country":"Malaysia"}},"FirstPractice":{"date":"2026-10-02","time":"04:30:00Z"},"SecondPractice":{"date":"2026-10-02","time":"08:00:00Z"},"ThirdPractice":{"date":"2026-10-03","time":"04:30:00Z"},"Qualifying":{"date":"2026-10-03","time":"08:00:00Z"}},
+    {"round":"17","date":"2026-10-11","time":"12:00:00Z","Circuit":{"circuitId":"marina_bay","circuitName":"Marina Bay Street Circuit","Location":{"locality":"Marina Bay","country":"Singapore"}},"FirstPractice":{"date":"2026-10-09","time":"08:30:00Z"},"SprintQualifying":{"date":"2026-10-09","time":"12:30:00Z"},"Sprint":{"date":"2026-10-10","time":"09:00:00Z"},"Qualifying":{"date":"2026-10-10","time":"13:00:00Z"}},
+    {"round":"18","date":"2026-10-25","time":"20:00:00Z","Circuit":{"circuitId":"americas","circuitName":"Circuit of the Americas","Location":{"locality":"Austin","country":"USA"}},"FirstPractice":{"date":"2026-10-23","time":"17:30:00Z"},"SecondPractice":{"date":"2026-10-23","time":"21:00:00Z"},"ThirdPractice":{"date":"2026-10-24","time":"17:30:00Z"},"Qualifying":{"date":"2026-10-24","time":"21:00:00Z"}},
+    {"round":"19","date":"2026-11-01","time":"20:00:00Z","Circuit":{"circuitId":"rodriguez","circuitName":"Autódromo Hermanos Rodríguez","Location":{"locality":"Mexico City","country":"Mexico"}},"FirstPractice":{"date":"2026-10-30","time":"18:30:00Z"},"SecondPractice":{"date":"2026-10-30","time":"22:00:00Z"},"ThirdPractice":{"date":"2026-10-31","time":"17:30:00Z"},"Qualifying":{"date":"2026-10-31","time":"21:00:00Z"}},
+    {"round":"20","date":"2026-11-08","time":"17:00:00Z","Circuit":{"circuitId":"interlagos","circuitName":"Autódromo José Carlos Pace","Location":{"locality":"São Paulo","country":"Brazil"}},"FirstPractice":{"date":"2026-11-06","time":"15:30:00Z"},"SecondPractice":{"date":"2026-11-06","time":"19:00:00Z"},"ThirdPractice":{"date":"2026-11-07","time":"14:30:00Z"},"Qualifying":{"date":"2026-11-07","time":"18:00:00Z"}},
+    {"round":"21","date":"2026-11-22","time":"04:00:00Z","Circuit":{"circuitId":"vegas","circuitName":"Las Vegas Strip Street Circuit","Location":{"locality":"Las Vegas","country":"USA"}},"FirstPractice":{"date":"2026-11-20","time":"00:30:00Z"},"SecondPractice":{"date":"2026-11-20","time":"04:00:00Z"},"ThirdPractice":{"date":"2026-11-21","time":"00:30:00Z"},"Qualifying":{"date":"2026-11-21","time":"04:00:00Z"}},
+    {"round":"22","date":"2026-11-29","time":"16:00:00Z","Circuit":{"circuitId":"losail","circuitName":"Lusail International Circuit","Location":{"locality":"Lusail","country":"Qatar"}},"FirstPractice":{"date":"2026-11-27","time":"13:30:00Z"},"SecondPractice":{"date":"2026-11-27","time":"17:00:00Z"},"ThirdPractice":{"date":"2026-11-28","time":"14:30:00Z"},"Qualifying":{"date":"2026-11-28","time":"18:00:00Z"}},
+    {"round":"23","date":"2026-12-06","time":"13:00:00Z","Circuit":{"circuitId":"yas_marina","circuitName":"Yas Marina Circuit","Location":{"locality":"Abu Dhabi","country":"UAE"}},"FirstPractice":{"date":"2026-12-04","time":"09:30:00Z"},"SecondPractice":{"date":"2026-12-04","time":"13:00:00Z"},"ThirdPractice":{"date":"2026-12-05","time":"10:30:00Z"},"Qualifying":{"date":"2026-12-05","time":"14:00:00Z"}}
+
+  ];
+  const FALLBACK_CAL = apiToCalendar(FALLBACK_RAW);
 
   // ── Aktueller Kalender (wird durch API befüllt oder Fallback) ─────────
   let activeCal = FALLBACK_CAL;
+  let seasonYear = 2026;
 
   // ── Render ────────────────────────────────────────────────────────────
   function render(){
@@ -644,7 +640,7 @@
           <div class="countdown">Beginnt <span>${fmtCountdown(ms)}</span></div>
         </div>`;
     } else {
-      nextEl.innerHTML = `<div class="nothing"><div class="nothing-txt">Saison 2026 beendet</div></div>`;
+      nextEl.innerHTML = `<div class="nothing"><div class="nothing-txt">Saison ${seasonYear} beendet</div></div>`;
     }
 
 
@@ -653,15 +649,23 @@
   }
 
   // ── API-Fetch mit localStorage-Cache ─────────────────────────────────
-  const CACHE_KEY = 'f1_sessions_v3';
+  const CACHE_KEY = 'f1_calendar_v4';
   const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 Stunden
 
   async function fetchFromAPI(){
-    const res = await fetch('https://api.openf1.org/v1/sessions?year=2026');
+    // "current" = immer die aktuelle Saison, abgesagte Rennen sind nicht drin
+    const res = await fetch('https://api.jolpi.ca/ergast/f1/current.json?limit=100');
     if(!res.ok) throw new Error('HTTP '+res.status);
-    const data = await res.json();
-    if(!Array.isArray(data) || data.length === 0) throw new Error('Leere Antwort');
-    return data;
+    const json = await res.json();
+    const races = json.MRData.RaceTable.Races;
+    if(!Array.isArray(races) || races.length === 0) throw new Error('Leere Antwort');
+    return {season: +json.MRData.RaceTable.season, races};
+  }
+
+  function applyCalendar(data){
+    activeCal  = apiToCalendar(data.races);
+    seasonYear = data.season || seasonYear;
+    document.querySelectorAll('.season-year').forEach(el => el.textContent = seasonYear);
   }
 
   async function loadCalendar(){
@@ -669,7 +673,7 @@
     try {
       const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
       if(cached && (Date.now() - cached.ts) < CACHE_TTL){
-        activeCal = apiToCalendar(cached.data);
+        applyCalendar(cached.data);
         render();
         return;
       }
@@ -679,7 +683,7 @@
     try {
       const data = await fetchFromAPI();
       try { localStorage.setItem(CACHE_KEY, JSON.stringify({ts: Date.now(), data})); } catch(_){}
-      activeCal = apiToCalendar(data);
+      applyCalendar(data);
     } catch(err){
       console.warn('API nicht erreichbar, verwende Fallback-Kalender:', err.message);
       activeCal = FALLBACK_CAL;
@@ -725,11 +729,11 @@
   }
 
   // ── Fahrerwertung (Jolpica API) ───────────────────────────────────────
-  const STAND_CACHE_KEY = 'f1_standings_2026';
+  const STAND_CACHE_KEY = 'f1_standings_current';
   const STAND_TTL = 12 * 60 * 60 * 1000; // 12 Stunden
 
   async function fetchStandings(){
-    const res = await fetch('https://api.jolpi.ca/ergast/f1/2026/driverStandings.json');
+    const res = await fetch('https://api.jolpi.ca/ergast/f1/current/driverStandings.json');
     if(!res.ok) throw new Error('HTTP '+res.status);
     const json = await res.json();
     return json.MRData.StandingsTable.StandingsLists[0].DriverStandings;
@@ -769,7 +773,7 @@
     const el    = document.getElementById('stand-content');
     label.innerHTML = isLive
       ? '<span style="color:var(--fr)">&#9679;</span> Live-Positionen'
-      : '&#127942; Fahrerwertung 2026';
+      : '&#127942; Fahrerwertung '+seasonYear;
 
     el.innerHTML = list.map((d,i) => {
       const posClass = i===0?'p1':i===1?'p2':i===2?'p3':'';
